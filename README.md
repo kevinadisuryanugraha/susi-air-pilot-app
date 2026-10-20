@@ -7,6 +7,17 @@
 
 ---
 
+## 🌐 Live Deployments & Submission Links
+
+| Service | Live Deployment URL |
+|---|---|
+| **Frontend (Nuxt 3 Mobile App)** | **[https://nuxt-flame.vercel.app](https://nuxt-flame.vercel.app)** |
+| **Backend (NestJS REST API)** | **[https://nest-ten-taupe.vercel.app](https://nest-ten-taupe.vercel.app)** |
+| **API Health Status** | **[https://nest-ten-taupe.vercel.app/health](https://nest-ten-taupe.vercel.app/health)** |
+| **GitHub Repository** | **[https://github.com/kevinadisuryanugraha/susi-air-pilot-app](https://github.com/kevinadisuryanugraha/susi-air-pilot-app)** |
+
+---
+
 ## ✈️ Executive Summary
 
 This repository contains the complete implementation of the **Susi Air Pilot Operations App**, designed as an operational mobile-first web tool for pilots to monitor flight schedules, track rolling flight hours against DGCA/CASR regulatory duty limits, and review legal aviation document validities.

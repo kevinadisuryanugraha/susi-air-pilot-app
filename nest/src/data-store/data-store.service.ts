@@ -59,8 +59,11 @@ export class DataStoreService implements OnModuleInit {
       const possibleDirs = [
         path.resolve(currentDir, '../data'),
         path.resolve(currentDir, '../../src/data'),
+        path.resolve(currentDir, '../src/data'),
+        path.resolve(currentDir, './data'),
         path.resolve(process.cwd(), 'src/data'),
         path.resolve(process.cwd(), 'nest/src/data'),
+        path.resolve(process.cwd(), 'dist/data'),
       ];
 
       let dataDir = possibleDirs.find((dir) =>
