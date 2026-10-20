@@ -277,7 +277,11 @@ async function runFullAudit() {
   assert(suiteFrontend, 'GET /login returns 200 OK on Vercel Edge', feLoginRes.status === 200);
   const loginHtml = await feLoginRes.text();
   assert(suiteFrontend, "Login page contains 'Susi Air · Pilot App' title", loginHtml.includes('Susi Air · Pilot App'));
-  assert(suiteFrontend, 'Login page includes official Susi Air logo asset', loginHtml.includes('logo.png'));
+  assert(
+    suiteFrontend,
+    'Login page includes official Susi Air logo asset',
+    loginHtml.includes('logo-white.png') || loginHtml.includes('logo.png'),
+  );
   assert(suiteFrontend, 'Login page includes Google Font Plus Jakarta Sans', loginHtml.includes('Plus+Jakarta+Sans'));
 
   const feHomeRes = await fetch(`${FE_BASE}/`, { redirect: 'manual' });
