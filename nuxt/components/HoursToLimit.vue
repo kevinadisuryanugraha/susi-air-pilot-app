@@ -1,267 +1,346 @@
 <template>
   <section class="hours-to-limit">
-    <div class="section-header">
-      <div class="title-group">
-        <h3 class="section-title">Hours to Limit</h3>
-        <p class="section-subtitle">CASR Regulatory Flight Duty Limits</p>
+    <div class="section-title-bar">
+      <div class="title-meta">
+        <span class="hud-eyebrow">CASR PART 121 / 135 DUTY MONITOR</span>
+        <h2 class="title-text">Hours to Limit</h2>
       </div>
-      <span class="baseline-badge" title="Simulation Baseline">
-        Ref: {{ store.summary?.today || '2026-05-15' }}
-      </span>
+      <div class="anchor-date-chip" title="Regulatory Evaluation Anchor Date">
+        <CalendarCheck :size="12" />
+        <span class="mono">15 MAY 2026</span>
+      </div>
     </div>
 
-    <!-- 4 Regulatory Limit Summary Cards -->
-    <div class="cards-grid">
+    <!-- 4 Telemetry Regulatory Duty Cards -->
+    <div class="telemetry-cards-grid">
       <div
         v-for="card in store.summary?.cards || []"
         :key="card.type"
-        class="limit-card"
-        :class="[`status-${card.status}`]"
+        class="telemetry-card"
+        :class="[`gauge-${card.status}`]"
       >
-        <div class="card-top">
-          <span class="card-label">{{ card.label }}</span>
-          <span class="window-badge">{{ card.windowDescription }}</span>
-        </div>
-
-        <div class="card-values">
-          <div class="main-val">
-            <span class="current-hrs tabular">{{ card.currentHours }}</span>
-            <span class="divider">/</span>
-            <span class="limit-hrs tabular">{{ card.limit }}</span>
-            <span class="unit">h</span>
+        <div class="card-header-row">
+          <div class="label-group">
+            <span class="window-type-badge">{{ card.label.replace(' Limit', '') }}</span>
+            <span class="window-rule mono">{{ card.windowDescription }}</span>
           </div>
 
-          <span
-            class="status-pill"
-            :class="[`pill-${card.status}`]"
-          >
-            {{ card.status === 'danger' ? 'Exceeded' : card.status === 'warning' ? 'Near Limit' : 'Safe' }}
+          <span class="status-indicator-tag" :class="[`tag-${card.status}`]">
+            {{ card.status === 'danger' ? 'LIMIT BREACH' : card.status === 'warning' ? 'CAUTION' : 'AIRWORTHY' }}
           </span>
         </div>
 
-        <!-- Progress bar -->
-        <div class="progress-bar-bg">
+        <div class="card-metric-row">
+          <div class="dial-numbers">
+            <span class="current-val mono font-bold tabular">{{ card.currentHours }}</span>
+            <span class="metric-divider">/</span>
+            <span class="limit-val mono tabular">{{ card.limit }}<span class="unit">h</span></span>
+          </div>
+          <span class="ratio-percent mono font-bold">{{ card.percentage }}%</span>
+        </div>
+
+        <!-- 10-Segment Cockpit Gauge Bar -->
+        <div class="cockpit-gauge-track">
           <div
-            class="progress-fill"
-            :class="[`fill-${card.status}`]"
-            :style="{ width: `${Math.min(100, card.percentage)}%` }"
+            v-for="seg in 10"
+            :key="seg"
+            class="gauge-segment"
+            :class="{
+              active: (card.percentage / 10) >= seg,
+              exceeded: card.isExceeded,
+              warning: !card.isExceeded && card.status === 'warning' && (card.percentage / 10) >= seg,
+              safe: !card.isExceeded && card.status === 'safe' && (card.percentage / 10) >= seg
+            }"
           ></div>
         </div>
 
-        <div class="card-footer">
-          <span class="remaining-text">
-            <template v-if="card.isExceeded">
-              Over limit by {{ (card.currentHours - card.limit).toFixed(1) }}h
-            </template>
-            <template v-else>
-              {{ card.remainingHours }}h remaining
-            </template>
+        <div class="card-buffer-row">
+          <span class="buffer-label">Operational Margin:</span>
+          <span
+            class="buffer-value mono font-bold"
+            :class="card.isExceeded ? 'text-danger' : 'text-success'"
+          >
+            {{ card.isExceeded ? `-${(card.currentHours - card.limit).toFixed(1)}h OVER` : `+${card.remainingHours}h buffer` }}
           </span>
-          <span class="percentage tabular">{{ card.percentage }}%</span>
         </div>
       </div>
     </div>
 
-    <!-- Flight Hours Trend Chart -->
-    <div class="chart-container">
-      <div class="chart-header">
-        <div class="chart-title-wrap">
-          <h4 class="chart-title">Flight Hours Trend</h4>
-          <span class="chart-subtitle">15-day window (Today centered)</span>
+    <!-- High-Precision Telemetry Trend Chart Card -->
+    <div class="telemetry-chart-card">
+      <div class="chart-top-bar">
+        <div class="chart-meta">
+          <div class="chart-heading-wrap">
+            <Activity :size="15" class="chart-icon" />
+            <h3 class="chart-heading">Rolling Duty Curve</h3>
+          </div>
+          <p class="chart-desc">15-day continuous sliding window · Center: Today</p>
         </div>
 
-        <!-- Range toggle buttons: 1w, 1m, 3m, 6m, 1y -->
-        <div class="range-toggles">
+        <!-- Animated Range Toggle Pills: 1w, 1m, 3m, 6m, 1y -->
+        <div class="range-switch-group">
           <button
             v-for="r in rangeOptions"
             :key="r"
-            class="toggle-btn"
+            class="range-pill"
             :class="{ active: store.selectedRange === r }"
             @click="handleRangeChange(r)"
           >
-            {{ r }}
+            {{ r.toUpperCase() }}
           </button>
         </div>
       </div>
 
-      <!-- Legend & Limit Indicator -->
-      <div class="chart-legend-bar">
-        <div class="legend-item">
-          <span class="swatch line-accent"></span>
-          <span>Rolling Sum ({{ store.summary?.chart?.windowDays }}d window)</span>
+      <!-- Telemetry Sub-bar -->
+      <div class="chart-sub-strip">
+        <div class="strip-item">
+          <span class="dot-swatch swatch-cyan"></span>
+          <span>Rolling Window: <strong class="mono">{{ store.summary?.chart?.windowDays }} Days</strong></span>
         </div>
-        <div class="legend-item">
-          <span class="swatch line-limit"></span>
-          <span>Limit: <strong class="tabular">{{ store.summary?.chart?.limitLine }}h</strong></span>
+        <div class="strip-item">
+          <span class="dot-swatch swatch-red"></span>
+          <span>Ceiling Limit: <strong class="mono text-red">{{ store.summary?.chart?.limitLine }}.0h</strong></span>
         </div>
       </div>
 
-      <!-- SVG Reactive Responsive Chart -->
-      <div class="chart-wrapper">
-        <div v-if="store.isLoading" class="chart-loading">
-          <div class="spinner"></div>
-          <span>Calculating rolling window on server...</span>
+      <!-- Interactive SVG Spline Chart -->
+      <div class="svg-stage-wrapper">
+        <div v-if="store.isLoading" class="chart-loading-overlay">
+          <div class="radar-spinner"></div>
+          <span class="loading-label mono">CALCULATING SLIDING WINDOW ON SERVER...</span>
         </div>
 
         <svg
           v-else-if="chartPoints.length > 0"
-          class="trend-svg"
-          viewBox="0 0 380 210"
+          class="cockpit-spline-svg"
+          viewBox="0 0 380 220"
           preserveAspectRatio="xMidYMid meet"
+          @mousemove="handlePointerMove"
+          @touchmove="handleTouchMove"
+          @mouseleave="activePoint = null"
         >
-          <!-- Grid lines -->
+          <defs>
+            <!-- Neon Cyan Glow Filter -->
+            <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            <!-- Red Limit Glow Filter -->
+            <filter id="red-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            <!-- Gradient Area Fill -->
+            <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.35" />
+              <stop offset="60%" stop-color="#06B6D4" stop-opacity="0.08" />
+              <stop offset="100%" stop-color="#06B6D4" stop-opacity="0.00" />
+            </linearGradient>
+
+            <linearGradient id="today-pillar-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0E2138" stop-opacity="0.15" />
+              <stop offset="100%" stop-color="#0E2138" stop-opacity="0.02" />
+            </linearGradient>
+          </defs>
+
+          <!-- Subtle Horizontal Grid Lines -->
           <line
             v-for="tick in yTicks"
-            :key="`ytick-${tick.val}`"
+            :key="`grid-${tick.val}`"
             :x1="padding.left"
             :y1="tick.y"
             :x2="svgWidth - padding.right"
             :y2="tick.y"
-            class="grid-line"
+            class="hud-grid-line"
           />
 
-          <!-- Y-axis labels -->
+          <!-- Y-axis numeric labels -->
           <text
             v-for="tick in yTicks"
-            :key="`ylabel-${tick.val}`"
+            :key="`lbl-${tick.val}`"
             :x="padding.left - 6"
-            :y="tick.y + 4"
-            class="y-axis-label tabular"
+            :y="tick.y + 3.5"
+            class="y-axis-hud-text mono"
           >
             {{ tick.val }}
           </text>
 
-          <!-- Today vertical indicator background line -->
-          <line
-            v-if="todayPoint"
-            :x1="todayPoint.x"
-            :y1="padding.top - 5"
-            :x2="todayPoint.x"
-            :y2="svgHeight - padding.bottom"
-            class="today-line"
-          />
-
-          <!-- Today indicator header badge -->
+          <!-- TODAY Column Indicator Pillar -->
           <g v-if="todayPoint">
             <rect
-              :x="todayPoint.x - 22"
-              :y="padding.top - 20"
-              width="44"
-              height="16"
-              rx="8"
-              class="today-badge-bg"
+              :x="todayPoint.x - 11"
+              :y="padding.top - 12"
+              width="22"
+              :height="plotHeight + 12"
+              rx="4"
+              fill="url(#today-pillar-gradient)"
+            />
+            <line
+              :x1="todayPoint.x"
+              :y1="padding.top - 12"
+              :x2="todayPoint.x"
+              :y2="svgHeight - padding.bottom"
+              class="today-beacon-axis"
+            />
+            <rect
+              :x="todayPoint.x - 18"
+              :y="padding.top - 24"
+              width="36"
+              height="15"
+              rx="4"
+              class="today-flag-bg"
             />
             <text
               :x="todayPoint.x"
-              :y="padding.top - 8"
-              class="today-badge-text"
+              :y="padding.top - 13"
+              class="today-flag-text mono"
             >
               TODAY
             </text>
           </g>
 
-          <!-- Red Limit Line (Horizontal) -->
+          <!-- Regulatory Ceiling Limit Line (Glowing Red Dashed Line) -->
           <line
             :x1="padding.left"
             :y1="limitY"
             :x2="svgWidth - padding.right"
             :y2="limitY"
-            class="limit-line-red"
+            class="ceiling-limit-line"
+            filter="url(#red-glow)"
           />
-          <text
-            :x="svgWidth - padding.right"
-            :y="limitY - 4"
-            class="limit-label-red tabular"
-          >
-            LIMIT {{ store.summary?.chart?.limitLine }}h
-          </text>
+          <g>
+            <rect
+              :x="svgWidth - padding.right - 58"
+              :y="limitY - 14"
+              width="58"
+              height="12"
+              rx="3"
+              class="ceiling-tag-bg"
+            />
+            <text
+              :x="svgWidth - padding.right - 29"
+              :y="limitY - 5"
+              class="ceiling-tag-text mono"
+            >
+              MAX {{ store.summary?.chart?.limitLine }}h
+            </text>
+          </g>
 
-          <!-- Area fill under line -->
-          <polygon :points="areaPoints" class="chart-area" />
+          <!-- Area Fill below Spline Curve -->
+          <path :d="areaSplinePath" fill="url(#area-gradient)" />
 
-          <!-- Main trend path -->
-          <polyline :points="polyPoints" class="chart-polyline" />
+          <!-- Main Curved Bézier Spline Line -->
+          <path
+            :d="curveSplinePath"
+            class="curve-spline"
+            filter="url(#cyan-glow)"
+          />
+
+          <!-- Vertical Crosshair Scanning Line on Hover/Touch -->
+          <line
+            v-if="hoveredPoint"
+            :x1="hoveredPoint.x"
+            :y1="padding.top - 10"
+            :x2="hoveredPoint.x"
+            :y2="svgHeight - padding.bottom"
+            class="crosshair-scan-line"
+          />
 
           <!-- Data Points -->
           <g
             v-for="(pt, idx) in chartPoints"
             :key="`pt-${pt.date}`"
-            class="data-point-group"
-            @click="activePoint = pt"
-            @mouseenter="activePoint = pt"
+            class="point-group"
+            @mouseenter="hoveredPoint = pt"
+            @click="hoveredPoint = pt"
           >
-            <!-- Invisible larger tap target -->
-            <circle :cx="pt.x" :cy="pt.y" r="12" class="tap-target" />
+            <!-- Large transparent touch area -->
+            <circle :cx="pt.x" :cy="pt.y" r="14" fill="transparent" class="point-touch-target" />
 
-            <!-- Point outer pulse for today or exceeded -->
+            <!-- Exceeded pulse aura -->
             <circle
-              v-if="pt.isToday || pt.isExceeded"
+              v-if="pt.isExceeded"
               :cx="pt.x"
               :cy="pt.y"
-              :r="pt.isToday ? 7 : 6"
-              :class="pt.isExceeded ? 'point-pulse-exceeded' : 'point-pulse-today'"
+              r="7"
+              class="pulse-exceeded-ring"
             />
 
-            <!-- Point dot -->
+            <!-- Point Center Ring -->
             <circle
               :cx="pt.x"
               :cy="pt.y"
-              :r="pt.isToday ? 5 : 3.5"
+              :r="pt.isToday ? 5 : (hoveredPoint?.date === pt.date ? 5 : 3.5)"
               :class="[
-                'point-dot',
-                pt.isToday ? 'dot-today' : '',
-                pt.isExceeded ? 'dot-exceeded' : 'dot-normal'
+                'spline-dot',
+                pt.isExceeded ? 'dot-red' : (pt.isToday ? 'dot-navy' : 'dot-cyan'),
+                hoveredPoint?.date === pt.date ? 'dot-hovered' : ''
               ]"
             />
 
-            <!-- X-axis date labels -->
+            <!-- X-Axis Day Numbers -->
             <text
               :x="pt.x"
-              :y="svgHeight - padding.bottom + 16"
-              class="x-axis-label tabular"
-              :class="{ 'label-today': pt.isToday }"
+              :y="svgHeight - padding.bottom + 17"
+              class="x-axis-day-label mono tabular"
+              :class="{ 'day-today': pt.isToday }"
             >
               {{ pt.dayNumber }}
             </text>
           </g>
 
-          <!-- Active point tooltip box -->
-          <g v-if="activePoint" class="tooltip-group">
+          <!-- Floating HUD Telemetry Readout Box -->
+          <g v-if="hoveredPoint" class="hud-tooltip-overlay">
             <rect
-              :x="Math.max(10, Math.min(svgWidth - 110, activePoint.x - 55))"
-              :y="Math.max(10, activePoint.y - 42)"
-              width="110"
-              height="34"
+              :x="tooltipX"
+              :y="tooltipY"
+              width="116"
+              height="40"
               rx="6"
-              class="tooltip-box"
+              class="hud-tooltip-card"
             />
-            <text
-              :x="Math.max(10, Math.min(svgWidth - 110, activePoint.x - 55)) + 55"
-              :y="Math.max(10, activePoint.y - 42) + 14"
-              class="tooltip-date"
-            >
-              {{ activePoint.date }} {{ activePoint.isToday ? '(Today)' : '' }}
+            <text :x="tooltipX + 58" :y="tooltipY + 14" class="tooltip-header mono">
+              {{ hoveredPoint.date }} {{ hoveredPoint.isToday ? '• TODAY' : '' }}
             </text>
-            <text
-              :x="Math.max(10, Math.min(svgWidth - 110, activePoint.x - 55)) + 55"
-              :y="Math.max(10, activePoint.y - 42) + 27"
-              class="tooltip-val"
-            >
-              Sum: {{ activePoint.rollingSum }}h (Day: {{ activePoint.dailyHours }}h)
+            <text :x="tooltipX + 58" :y="tooltipY + 28" class="tooltip-body mono">
+              {{ hoveredPoint.rollingSum }}h <tspan class="sub-day">({{ hoveredPoint.dailyHours }}h day)</tspan>
             </text>
           </g>
         </svg>
 
-        <div v-if="activePoint" class="point-detail-chip">
-          <span class="chip-date">{{ activePoint.formattedDate }}</span>
-          <span class="chip-sum">
-            Rolling Sum: <strong>{{ activePoint.rollingSum }}h</strong>
-          </span>
-          <span class="chip-daily">
-            Daily: <strong>{{ activePoint.dailyHours }}h</strong>
-          </span>
-          <span v-if="activePoint.isExceeded" class="chip-badge-exceeded">
-            ⚠️ Limit Exceeded
+        <!-- Live Telemetry Card Info Box below chart -->
+        <div class="active-telemetry-chip">
+          <div class="chip-col">
+            <span class="c-label">Inspected Point</span>
+            <span class="c-val mono">{{ activeOrCurrentPoint.formattedDate }}</span>
+          </div>
+
+          <div class="chip-divider"></div>
+
+          <div class="chip-col">
+            <span class="c-label">Rolling Sum</span>
+            <span class="c-val mono font-bold" :class="activeOrCurrentPoint.isExceeded ? 'text-danger' : 'text-cyan'">
+              {{ activeOrCurrentPoint.rollingSum }} hrs
+            </span>
+          </div>
+
+          <div class="chip-divider"></div>
+
+          <div class="chip-col">
+            <span class="c-label">Daily Log</span>
+            <span class="c-val mono">{{ activeOrCurrentPoint.dailyHours }} hrs</span>
+          </div>
+
+          <span v-if="activeOrCurrentPoint.isExceeded" class="exceeded-badge mono">
+            ⚠️ BREACH
           </span>
         </div>
       </div>
@@ -271,14 +350,16 @@
 
 <script setup lang="ts">
 import { useFlightHoursStore, type ChartSeriesPoint } from '~/stores/flightHours';
+import { CalendarCheck, Activity } from 'lucide-vue-next';
 
 const store = useFlightHoursStore();
 const rangeOptions = ['1w', '1m', '3m', '6m', '1y'] as const;
-const activePoint = ref<any | null>(null);
+
+const hoveredPoint = ref<any | null>(null);
 
 const svgWidth = 380;
-const svgHeight = 210;
-const padding = { top: 32, right: 24, bottom: 34, left: 36 };
+const svgHeight = 220;
+const padding = { top: 36, right: 24, bottom: 38, left: 34 };
 
 const plotWidth = svgWidth - padding.left - padding.right;
 const plotHeight = svgHeight - padding.top - padding.bottom;
@@ -290,7 +371,7 @@ onMounted(() => {
 });
 
 function handleRangeChange(r: '1w' | '1m' | '3m' | '6m' | '1y') {
-  activePoint.value = null;
+  hoveredPoint.value = null;
   store.fetchSummary(r);
 }
 
@@ -325,15 +406,14 @@ const chartPoints = computed(() => {
 
   return series.map((pt: ChartSeriesPoint, idx: number) => {
     const x = padding.left + idx * stepX;
-    // Cap minimum Y visual at 0 to avoid drawing outside the SVG
     const ratio = Math.max(0, pt.rollingSum / yMax.value);
     const y = padding.top + (1 - ratio) * plotHeight;
     const dayNumber = pt.date.slice(8); // 'DD'
 
     return {
       ...pt,
-      x,
-      y,
+      x: Number(x.toFixed(2)),
+      y: Number(y.toFixed(2)),
       dayNumber,
     };
   });
@@ -343,295 +423,426 @@ const todayPoint = computed(() => {
   return chartPoints.value.find((p) => p.isToday);
 });
 
-const polyPoints = computed(() => {
-  return chartPoints.value.map((p) => `${p.x},${p.y}`).join(' ');
+const activeOrCurrentPoint = computed(() => {
+  return hoveredPoint.value || todayPoint.value || chartPoints.value[7] || {
+    formattedDate: '15 May 2026',
+    rollingSum: 25.2,
+    dailyHours: 6.4,
+    isExceeded: false,
+  };
 });
 
-const areaPoints = computed(() => {
-  if (chartPoints.value.length === 0) return '';
-  const first = chartPoints.value[0];
-  const last = chartPoints.value[chartPoints.value.length - 1];
-  const baseline = svgHeight - padding.bottom;
-  const pts = chartPoints.value.map((p) => `${p.x},${p.y}`).join(' ');
-  return `${first.x},${baseline} ${pts} ${last.x},${baseline}`;
+// Catmull-Rom to Cubic Bézier Spline Curve Generator
+const curveSplinePath = computed(() => {
+  const pts = chartPoints.value;
+  if (pts.length < 2) return '';
+  let d = `M ${pts[0].x},${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
 });
+
+const areaSplinePath = computed(() => {
+  const pts = chartPoints.value;
+  if (pts.length === 0) return '';
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  const baseline = svgHeight - padding.bottom;
+  return `${curveSplinePath.value} L ${last.x},${baseline} L ${first.x},${baseline} Z`;
+});
+
+// Tooltip positioning
+const tooltipX = computed(() => {
+  if (!hoveredPoint.value) return 0;
+  const x = hoveredPoint.value.x - 58;
+  return Math.max(10, Math.min(svgWidth - 126, x));
+});
+
+const tooltipY = computed(() => {
+  if (!hoveredPoint.value) return 0;
+  const y = hoveredPoint.value.y - 48;
+  return Math.max(8, y);
+});
+
+function handlePointerMove(e: MouseEvent) {
+  const svg = e.currentTarget as SVGSVGElement;
+  const rect = svg.getBoundingClientRect();
+  const scale = svgWidth / rect.width;
+  const mouseX = (e.clientX - rect.left) * scale;
+  findClosestPoint(mouseX);
+}
+
+function handleTouchMove(e: TouchEvent) {
+  if (e.touches.length === 0) return;
+  const touch = e.touches[0];
+  const svg = e.currentTarget as SVGSVGElement;
+  const rect = svg.getBoundingClientRect();
+  const scale = svgWidth / rect.width;
+  const touchX = (touch.clientX - rect.left) * scale;
+  findClosestPoint(touchX);
+}
+
+function findClosestPoint(x: number) {
+  if (chartPoints.value.length === 0) return;
+  let closest = chartPoints.value[0];
+  let minDiff = Math.abs(x - closest.x);
+
+  for (const pt of chartPoints.value) {
+    const diff = Math.abs(x - pt.x);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = pt;
+    }
+  }
+  hoveredPoint.value = closest;
+}
 </script>
 
 <style scoped lang="scss">
 .hours-to-limit {
-  padding: 16px 20px 20px;
+  padding: 18px 20px 22px;
 }
 
-.section-header {
+.section-title-bar {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
   margin-bottom: 14px;
-}
 
-.title-group {
-  .section-title {
-    font-size: 16px;
-    font-weight: 700;
+  .hud-eyebrow {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #0284C7;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .title-text {
+    font-size: 18px;
+    font-weight: 800;
     color: $color-primary-navy;
-    letter-spacing: -0.2px;
-  }
-
-  .section-subtitle {
-    font-size: 11px;
-    color: $color-text-secondary;
-    margin-top: 1px;
+    letter-spacing: -0.4px;
   }
 }
 
-.baseline-badge {
+.anchor-date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
-  font-weight: 600;
-  background: #E5E7EB;
-  color: #374151;
-  padding: 3px 8px;
+  font-weight: 700;
+  background: white;
+  color: #334155;
+  padding: 4px 10px;
   border-radius: $radius-pill;
+  border: 1px solid $color-border;
+  box-shadow: $shadow-sm;
 }
 
-// 4 Cards Grid
-.cards-grid {
+// 4 Telemetry Cards
+.telemetry-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.limit-card {
-  background-color: $color-card-surface;
+.telemetry-card {
+  background: white;
   border-radius: $radius-card;
-  padding: 12px;
+  padding: 14px 12px;
   border: 1px solid $color-border;
   box-shadow: $shadow-card;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  transition: $transition-default;
 
-  &.status-danger {
-    border-color: rgba(230, 55, 87, 0.4);
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F7 100%);
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #CBD5E1;
   }
 
-  &.status-warning {
-    border-color: rgba(245, 158, 11, 0.4);
+  &.gauge-safe::before { background: $color-success; }
+  &.gauge-warning::before { background: $color-warning; }
+  &.gauge-danger::before {
+    background: $color-danger;
+    box-shadow: 0 0 10px $color-danger-glow;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-elevated;
   }
 }
 
-.card-top {
+.card-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  margin-bottom: 8px;
 
-  .card-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: $color-primary-navy;
+  .label-group {
+    display: flex;
+    flex-direction: column;
+
+    .window-type-badge {
+      font-size: 12px;
+      font-weight: 800;
+      color: $color-primary-navy;
+      letter-spacing: -0.2px;
+    }
+
+    .window-rule {
+      font-size: 9px;
+      color: $color-text-secondary;
+      margin-top: 1px;
+    }
   }
 
-  .window-badge {
-    font-size: 9px;
-    font-weight: 500;
-    color: $color-text-secondary;
-    background: #F3F4F6;
-    padding: 1px 6px;
-    border-radius: 4px;
+  .status-indicator-tag {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: $radius-pill;
+
+    &.tag-safe {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+    }
+    &.tag-warning {
+      background: rgba(245, 158, 11, 0.12);
+      color: #D97706;
+    }
+    &.tag-danger {
+      background: rgba(230, 55, 87, 0.15);
+      color: #E63757;
+      animation: pulse 1.8s infinite;
+    }
   }
 }
 
-.card-values {
+.card-metric-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 
-  .main-val {
+  .dial-numbers {
     display: flex;
     align-items: baseline;
-    gap: 2px;
+    gap: 3px;
 
-    .current-hrs {
-      font-size: 17px;
+    .current-val {
+      font-size: 18px;
       font-weight: 800;
       color: $color-primary-navy;
     }
 
-    .divider {
-      color: $color-text-muted;
-      font-size: 12px;
+    .metric-divider {
+      color: #CBD5E1;
+      font-size: 13px;
     }
 
-    .limit-hrs {
-      font-size: 12px;
-      font-weight: 600;
+    .limit-val {
+      font-size: 13px;
+      font-weight: 700;
       color: $color-text-secondary;
-    }
 
-    .unit {
-      font-size: 10px;
-      color: $color-text-muted;
-      margin-left: 1px;
+      .unit {
+        font-size: 10px;
+        color: $color-text-muted;
+      }
     }
   }
 
-  .status-pill {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: $radius-pill;
+  .ratio-percent {
+    font-size: 11px;
+    color: #475569;
+  }
+}
 
-    &.pill-safe {
-      background-color: rgba(31, 191, 143, 0.15);
-      color: #0E805D;
-    }
+// 10-Segment Cockpit Gauge Bar
+.cockpit-gauge-track {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2.5px;
+  height: 6px;
+  margin-bottom: 8px;
 
-    &.pill-warning {
-      background-color: rgba(245, 158, 11, 0.15);
-      color: #B45309;
-    }
+  .gauge-segment {
+    background-color: #E2E8F0;
+    border-radius: 1.5px;
+    transition: background-color 0.25s ease;
 
-    &.pill-danger {
-      background-color: rgba(230, 55, 87, 0.15);
-      color: #C11E3E;
+    &.active.safe { background-color: $color-success; }
+    &.active.warning { background-color: $color-warning; }
+    &.active.exceeded {
+      background-color: $color-danger;
+      box-shadow: 0 0 4px $color-danger-glow;
     }
   }
 }
 
-.progress-bar-bg {
-  height: 5px;
-  background-color: #E5E7EB;
-  border-radius: 9999px;
-  overflow: hidden;
-  margin-bottom: 6px;
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 9999px;
-    transition: width 0.4s ease;
-
-    &.fill-safe { background-color: $color-success; }
-    &.fill-warning { background-color: $color-warning; }
-    &.fill-danger { background-color: $color-danger; }
-  }
-}
-
-.card-footer {
+.card-buffer-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 10px;
-  color: $color-text-secondary;
 
-  .remaining-text {
-    font-weight: 500;
+  .buffer-label {
+    color: $color-text-secondary;
   }
 
-  .percentage {
-    font-weight: 700;
+  .buffer-value {
+    letter-spacing: 0.2px;
+
+    &.text-success { color: #059669; }
+    &.text-danger { color: $color-danger; }
   }
 }
 
-// Chart container
-.chart-container {
-  background-color: $color-card-surface;
+// Telemetry Trend Chart Card
+.telemetry-chart-card {
+  background: white;
   border-radius: $radius-card;
   padding: 16px 14px 14px;
   border: 1px solid $color-border;
   box-shadow: $shadow-card;
 }
 
-.chart-header {
+.chart-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.chart-title-wrap {
-  .chart-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: $color-primary-navy;
-  }
-
-  .chart-subtitle {
-    font-size: 10px;
-    color: $color-text-secondary;
-  }
-}
-
-.range-toggles {
+.chart-heading-wrap {
   display: flex;
-  background: #F0F2F5;
-  border-radius: 8px;
-  padding: 2px;
+  align-items: center;
+  gap: 6px;
+
+  .chart-icon {
+    color: #06B6D4;
+  }
+
+  .chart-heading {
+    font-size: 14px;
+    font-weight: 800;
+    color: $color-primary-navy;
+    letter-spacing: -0.2px;
+  }
+}
+
+.chart-desc {
+  font-size: 10px;
+  color: $color-text-secondary;
+  margin-top: 1px;
+}
+
+// Animated Range Pill Switcher
+.range-switch-group {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: $radius-pill;
+  padding: 2.5px;
   gap: 2px;
 
-  .toggle-btn {
+  .range-pill {
     padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    color: $color-text-secondary;
-    border-radius: 6px;
-    background: transparent;
+    font-size: 10px;
+    font-weight: 800;
+    color: #64748B;
+    border-radius: $radius-pill;
+    transition: $transition-default;
 
     &.active {
       background: $color-primary-navy;
       color: white;
+      box-shadow: 0 2px 6px rgba(14, 33, 56, 0.25);
     }
   }
 }
 
-.chart-legend-bar {
+.chart-sub-strip {
   display: flex;
   justify-content: flex-end;
   gap: 14px;
   font-size: 10px;
   color: $color-text-secondary;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 
-  .legend-item {
+  .strip-item {
     display: flex;
     align-items: center;
     gap: 5px;
 
-    .swatch {
-      width: 10px;
-      height: 3px;
-      border-radius: 2px;
+    .dot-swatch {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
 
-      &.line-accent { background-color: $color-chart-accent; }
-      &.line-limit { background-color: $color-brand-red; }
+      &.swatch-cyan {
+        background-color: #06B6D4;
+        box-shadow: 0 0 6px $color-chart-glow;
+      }
+      &.swatch-red {
+        background-color: $color-danger;
+        box-shadow: 0 0 6px $color-danger-glow;
+      }
     }
+
+    .text-red { color: $color-danger; }
   }
 }
 
-.chart-wrapper {
+.svg-stage-wrapper {
   position: relative;
   width: 100%;
 }
 
-.chart-loading {
-  height: 180px;
+.chart-loading-overlay {
+  height: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: $color-text-secondary;
-  font-size: 12px;
+  gap: 12px;
 
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #E5E7EB;
-    border-top-color: $color-primary-navy;
+  .radar-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(14, 33, 56, 0.1);
+    border-top-color: #06B6D4;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+  }
+
+  .loading-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: $color-text-secondary;
+    letter-spacing: 0.8px;
   }
 }
 
@@ -639,157 +850,207 @@ const areaPoints = computed(() => {
   to { transform: rotate(360deg); }
 }
 
-.trend-svg {
+.cockpit-spline-svg {
   width: 100%;
   height: auto;
   overflow: visible;
+  cursor: crosshair;
 }
 
-.grid-line {
-  stroke: #E5E7EB;
+.hud-grid-line {
+  stroke: #F1F5F9;
   stroke-width: 1;
-  stroke-dasharray: 2, 3;
-}
-
-.y-axis-label {
-  font-size: 9px;
-  fill: #9CA3AF;
-  text-anchor: end;
-  font-weight: 500;
-}
-
-.today-line {
-  stroke: rgba(14, 33, 56, 0.35);
-  stroke-width: 1.5;
   stroke-dasharray: 3, 3;
 }
 
-.today-badge-bg {
+.y-axis-hud-text {
+  font-size: 9px;
+  fill: #94A3B8;
+  text-anchor: end;
+  font-weight: 600;
+}
+
+.today-beacon-axis {
+  stroke: rgba(14, 33, 56, 0.4);
+  stroke-width: 1.5;
+  stroke-dasharray: 2, 2;
+}
+
+.today-flag-bg {
   fill: $color-primary-navy;
 }
 
-.today-badge-text {
+.today-flag-text {
   fill: white;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 800;
   text-anchor: middle;
   letter-spacing: 0.5px;
 }
 
-.limit-line-red {
-  stroke: $color-brand-red;
-  stroke-width: 1.5;
+.ceiling-limit-line {
+  stroke: $color-danger;
+  stroke-width: 1.8;
+  stroke-dasharray: 4, 3;
 }
 
-.limit-label-red {
-  fill: $color-brand-red;
-  font-size: 8px;
-  font-weight: 700;
-  text-anchor: end;
+.ceiling-tag-bg {
+  fill: $color-danger;
 }
 
-.chart-area {
-  fill: rgba(34, 197, 232, 0.12);
+.ceiling-tag-text {
+  fill: white;
+  font-size: 7.5px;
+  font-weight: 800;
+  text-anchor: middle;
+  letter-spacing: 0.5px;
 }
 
-.chart-polyline {
+.curve-spline {
   fill: none;
-  stroke: $color-chart-accent;
+  stroke: #06B6D4;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.tap-target {
-  fill: transparent;
+.crosshair-scan-line {
+  stroke: #0284C7;
+  stroke-width: 1.2;
+  stroke-dasharray: 2, 2;
+}
+
+.point-touch-target {
   cursor: pointer;
 }
 
-.point-pulse-today {
-  fill: rgba(14, 33, 56, 0.2);
+.pulse-exceeded-ring {
+  fill: none;
+  stroke: $color-danger;
+  stroke-width: 1.5;
+  opacity: 0.8;
+  animation: pulseRing 1.5s infinite;
 }
 
-.point-pulse-exceeded {
-  fill: rgba(230, 55, 87, 0.25);
+@keyframes pulseRing {
+  0% { r: 5px; opacity: 1; }
+  100% { r: 10px; opacity: 0; }
 }
 
-.point-dot {
-  cursor: pointer;
-  transition: transform 0.1s ease;
+.spline-dot {
+  transition: all 0.15s ease;
+  stroke-width: 2;
 
-  &.dot-normal {
-    fill: $color-chart-accent;
+  &.dot-cyan {
+    fill: #06B6D4;
     stroke: white;
-    stroke-width: 1.5;
   }
 
-  &.dot-today {
+  &.dot-navy {
     fill: $color-primary-navy;
     stroke: white;
-    stroke-width: 2;
   }
 
-  &.dot-exceeded {
-    fill: $color-brand-red;
+  &.dot-red {
+    fill: $color-danger;
     stroke: white;
-    stroke-width: 2;
+  }
+
+  &.dot-hovered {
+    transform: scale(1.3);
   }
 }
 
-.x-axis-label {
+.x-axis-day-label {
   font-size: 9px;
-  fill: #6B7280;
+  fill: #64748B;
   text-anchor: middle;
-  font-weight: 500;
+  font-weight: 600;
 
-  &.label-today {
+  &.day-today {
     font-weight: 800;
     fill: $color-primary-navy;
   }
 }
 
 // Tooltip
-.tooltip-box {
-  fill: rgba(14, 33, 56, 0.95);
+.hud-tooltip-card {
+  fill: rgba(7, 21, 38, 0.95);
+  stroke: rgba(6, 182, 212, 0.5);
+  stroke-width: 1;
 }
 
-.tooltip-date {
-  fill: #CBD5E1;
+.tooltip-header {
+  fill: #94A3B8;
   font-size: 8px;
-  text-anchor: middle;
-}
-
-.tooltip-val {
-  fill: white;
-  font-size: 9px;
   font-weight: 700;
   text-anchor: middle;
+  letter-spacing: 0.5px;
 }
 
-.point-detail-chip {
-  margin-top: 10px;
-  padding: 8px 12px;
-  background-color: #F8FAFC;
+.tooltip-body {
+  fill: white;
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+
+  .sub-day {
+    fill: #38BDF8;
+    font-size: 8.5px;
+    font-weight: 600;
+  }
+}
+
+// Active telemetry chip bottom readout
+.active-telemetry-chip {
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
-  color: $color-text-primary;
 
-  .chip-date {
-    font-weight: 700;
-    color: $color-primary-navy;
+  .chip-col {
+    display: flex;
+    flex-direction: column;
+
+    .c-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .c-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: $color-primary-navy;
+      margin-top: 1px;
+
+      &.text-cyan { color: #0284C7; }
+      &.text-danger { color: $color-danger; }
+    }
   }
 
-  .chip-badge-exceeded {
-    font-size: 10px;
-    font-weight: 700;
-    color: $color-brand-red;
-    background: rgba(230, 55, 87, 0.12);
-    padding: 2px 6px;
-    border-radius: 4px;
+  .chip-divider {
+    width: 1px;
+    height: 20px;
+    background: #E2E8F0;
+  }
+
+  .exceeded-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: rgba(230, 55, 87, 0.15);
+    color: $color-danger;
+    border: 1px solid rgba(230, 55, 87, 0.3);
+    padding: 3px 8px;
+    border-radius: $radius-pill;
+    animation: pulse 1.8s infinite;
   }
 }
 </style>

@@ -6,14 +6,28 @@
 
 html, body {
   font-family: $font-family;
-  background-color: #E2E8F0;
+  background-color: #0B1726;
   color: $color-text-primary;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-// Mobile viewport wrapper (Simulates iOS/Android mobile frame on desktop, 100% full width on mobile)
+// Background aviation grid for desktop framing
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(14, 33, 56, 0.9) 0%, rgba(7, 19, 33, 1) 100%),
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Mobile viewport wrapper (Aviation iPad Mini / Cockpit Electronic Flight Bag frame)
 .app-viewport {
   width: 100%;
   max-width: 440px;
@@ -23,11 +37,20 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 20px 40px rgba(14, 33, 56, 0.12);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 1;
 
   @media (max-width: 480px) {
     max-width: 100%;
     box-shadow: none;
+    border-radius: 0;
+  }
+
+  @media (min-width: 481px) {
+    margin: 20px auto;
+    min-height: calc(100vh - 40px);
+    border-radius: 28px;
+    overflow: hidden;
   }
 }
 
@@ -35,19 +58,17 @@ html, body {
   flex: 1;
   padding-bottom: 84px; // space for bottom nav
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-// Utility classes
-.text-navy { color: $color-primary-navy; }
-.text-red { color: $color-brand-red; }
-.text-muted { color: $color-text-secondary; }
-
-.font-bold { font-weight: 700; }
-.font-semibold { font-weight: 600; }
-.font-medium { font-weight: 500; }
-
+// Global typography helpers
 .tabular {
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+}
+
+.mono {
+  font-family: $font-mono;
 }
 
 button {
@@ -55,9 +76,25 @@ button {
   cursor: pointer;
   border: none;
   background: none;
-  transition: all 0.2s ease;
+  transition: $transition-default;
 
   &:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
+}
+
+// Scrollbar styling for cockpit look
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 33, 56, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 33, 56, 0.3);
 }
