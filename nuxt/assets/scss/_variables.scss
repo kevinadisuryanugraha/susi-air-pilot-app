@@ -1,44 +1,30 @@
-// Susi Air Brand & Cockpit Avionics Tokens
+// Susi Air Official Palette (Strict Anti-Slop Specification)
 $color-primary-navy: #0E2138;
-$color-navy-dark: #071321;
-$color-navy-light: #162C46;
 $color-brand-red: #E63757;
-$color-brand-red-glow: rgba(230, 55, 87, 0.4);
-$color-bg: #F4F6F9;
+$color-bg: #F5F6F8;
 $color-card-surface: #FFFFFF;
 $color-text-primary: #0E2138;
-$color-text-secondary: #64748B;
-$color-text-muted: #94A3B8;
-$color-border: #E2E8F0;
-$color-border-subtle: rgba(226, 232, 240, 0.8);
+$color-text-secondary: #6B7280;
+$color-text-muted: #9CA3AF;
+$color-border: #E5E7EB;
 
-// Avionics & Telemetry Colors
-$color-success: #10B981;
-$color-success-glow: rgba(16, 185, 129, 0.3);
+// State Colors per Brief
+$color-success: #1FBF8F;
 $color-warning: #F59E0B;
-$color-warning-glow: rgba(245, 158, 11, 0.3);
 $color-danger: #E63757;
-$color-danger-glow: rgba(230, 55, 87, 0.35);
-$color-chart-accent: #06B6D4;
-$color-chart-glow: rgba(6, 182, 212, 0.4);
-$color-gold: #F59E0B;
+$color-chart-accent: #22C5E8;
 
 // Typography
 $font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-$font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
 
-// Radii
-$radius-card: 16px;
-$radius-md: 10px;
-$radius-sm: 6px;
+// Radii per Brief: 12-16px on cards, pill on buttons
+$radius-card: 14px;
+$radius-sm: 8px;
 $radius-pill: 9999px;
 
-// Shadows & Elevations
-$shadow-sm: 0 1px 3px rgba(14, 33, 56, 0.04), 0 1px 2px rgba(14, 33, 56, 0.02);
-$shadow-card: 0 4px 14px -2px rgba(14, 33, 56, 0.06), 0 2px 6px -1px rgba(14, 33, 56, 0.03);
-$shadow-elevated: 0 12px 28px -4px rgba(14, 33, 56, 0.12), 0 4px 10px -2px rgba(14, 33, 56, 0.04);
-$shadow-cockpit-glow: 0 8px 30px rgba(14, 33, 56, 0.25);
+// Clean Subtle Shadows (no generic AI heavy glows)
+$shadow-sm: 0 1px 2px rgba(14, 33, 56, 0.04);
+$shadow-card: 0 2px 8px rgba(14, 33, 56, 0.04), 0 1px 2px rgba(14, 33, 56, 0.02);
+$shadow-floating: 0 8px 24px rgba(14, 33, 56, 0.08);
 
-// Transitions
-$ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-$transition-default: all 0.25s $ease-spring;
+$transition-default: all 0.2s ease;

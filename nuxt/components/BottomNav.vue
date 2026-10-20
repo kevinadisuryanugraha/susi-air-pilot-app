@@ -1,41 +1,29 @@
 <template>
   <nav class="bottom-nav">
     <NuxtLink to="/" class="nav-item" :class="{ active: currentRoute === '/' }">
-      <div class="icon-wrap">
-        <LayoutDashboard :size="20" stroke-width="2.2" />
-        <span class="active-dot" v-if="currentRoute === '/'"></span>
-      </div>
-      <span class="nav-label">Dashboard</span>
+      <Home :size="20" />
+      <span>Home</span>
     </NuxtLink>
 
     <NuxtLink to="/schedule" class="nav-item" :class="{ active: currentRoute.startsWith('/schedule') }">
-      <div class="icon-wrap">
-        <CalendarDays :size="20" stroke-width="2.2" />
-        <span class="active-dot" v-if="currentRoute.startsWith('/schedule')"></span>
-      </div>
-      <span class="nav-label">Roster</span>
+      <Calendar :size="20" />
+      <span>Schedule</span>
     </NuxtLink>
 
     <NuxtLink to="/logbook" class="nav-item" :class="{ active: currentRoute.startsWith('/logbook') }">
-      <div class="icon-wrap">
-        <BookOpenCheck :size="20" stroke-width="2.2" />
-        <span class="active-dot" v-if="currentRoute.startsWith('/logbook')"></span>
-      </div>
-      <span class="nav-label">Logbook</span>
+      <BookOpen :size="20" />
+      <span>Logbook</span>
     </NuxtLink>
 
     <NuxtLink to="/more" class="nav-item" :class="{ active: currentRoute.startsWith('/more') }">
-      <div class="icon-wrap">
-        <SlidersHorizontal :size="20" stroke-width="2.2" />
-        <span class="active-dot" v-if="currentRoute.startsWith('/more')"></span>
-      </div>
-      <span class="nav-label">Aircraft</span>
+      <Menu :size="20" />
+      <span>More</span>
     </NuxtLink>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { LayoutDashboard, CalendarDays, BookOpenCheck, SlidersHorizontal } from 'lucide-vue-next';
+import { Home, Calendar, BookOpen, Menu } from 'lucide-vue-next';
 
 const route = useRoute();
 const currentRoute = computed(() => route.path);
@@ -49,24 +37,18 @@ const currentRoute = computed(() => route.path);
   transform: translateX(-50%);
   width: 100%;
   max-width: 440px;
-  height: 66px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  height: 64px;
+  background-color: white;
+  border-top: 1px solid $color-border;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 6px 12px 10px;
+  padding: 4px 12px 8px;
   z-index: 100;
-  box-shadow: 0 -4px 20px rgba(14, 33, 56, 0.08);
+  box-shadow: 0 -2px 10px rgba(14, 33, 56, 0.05);
 
   @media (max-width: 480px) {
     max-width: 100%;
-  }
-
-  @media (min-width: 481px) {
-    border-bottom-left-radius: 28px;
-    border-bottom-right-radius: 28px;
   }
 }
 
@@ -77,40 +59,19 @@ const currentRoute = computed(() => route.path);
   justify-content: center;
   text-decoration: none;
   color: #64748B;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   gap: 3px;
-  padding: 4px 14px;
-  border-radius: 12px;
+  padding: 4px 12px;
+  border-radius: $radius-sm;
   transition: $transition-default;
-  position: relative;
-
-  .icon-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 24px;
-
-    .active-dot {
-      position: absolute;
-      bottom: -3px;
-      width: 4px;
-      height: 4px;
-      background: $color-brand-red;
-      border-radius: 50%;
-      box-shadow: 0 0 6px $color-brand-red;
-    }
-  }
 
   &.active {
     color: $color-brand-red;
-    font-weight: 800;
+    font-weight: 700;
 
     svg {
       color: $color-brand-red;
-      transform: translateY(-1px);
     }
   }
 
