@@ -2,7 +2,7 @@
   <header class="header-bar">
     <div class="header-top">
       <div class="brand">
-        <img src="/images/logo.png" alt="Susi Air Logo" class="brand-logo" />
+        <img src="/images/logo-white.png" alt="Susi Air Logo" class="brand-logo" />
         <span class="brand-badge">PILOT OPS</span>
       </div>
 
@@ -70,12 +70,10 @@ function handleLogout() {
   gap: 10px;
 
   .brand-logo {
-    height: 28px;
+    height: 30px;
     width: auto;
     object-fit: contain;
-    background: rgba(255, 255, 255, 0.12);
-    padding: 3px 6px;
-    border-radius: 6px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
   }
 
   .brand-badge {
