@@ -1,0 +1,38 @@
+# Node & Dependencies
+node_modules/
+.npm/
+
+# Nuxt 3 & Vite
+.nuxt/
+.output/
+dist/
+*.local
+
+# NestJS build output
+nest/dist/
+nest/node_modules/
+
+# Nuxt build output
+nuxt/.nuxt/
+nuxt/.output/
+nuxt/dist/
+nuxt/node_modules/
+
+# Logs & Environment
+*.log
+.env
+.env.*
+!.env.example
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

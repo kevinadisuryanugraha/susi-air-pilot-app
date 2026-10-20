@@ -1,0 +1,63 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: $font-family;
+  background-color: #E2E8F0;
+  color: $color-text-primary;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Mobile viewport wrapper (Simulates iOS/Android mobile frame on desktop, 100% full width on mobile)
+.app-viewport {
+  width: 100%;
+  max-width: 440px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background-color: $color-bg;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(14, 33, 56, 0.12);
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+    box-shadow: none;
+  }
+}
+
+.main-content {
+  flex: 1;
+  padding-bottom: 84px; // space for bottom nav
+  overflow-y: auto;
+}
+
+// Utility classes
+.text-navy { color: $color-primary-navy; }
+.text-red { color: $color-brand-red; }
+.text-muted { color: $color-text-secondary; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}

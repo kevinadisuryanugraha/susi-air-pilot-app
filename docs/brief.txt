@@ -1,0 +1,54 @@
+Hi Kevin Adisurya Nugraha,
+
+
+
+We hope this message finds you well.
+
+
+
+Thank you for your interest in joining Susi Air and for participating in our selection process. We are pleased to inform you that you have successfully passed the administrative stage. Please accept our sincere congratulations.
+
+
+
+The next stage of the recruitment process is the technical test. Please find attached the brief for the Full Stack Developer position, along with the mock data files, as part of the recruitment process.
+
+
+
+Key points:
+
+•⁠ ⁠Nuxt JS, Pinia, and Nest JS
+
+•⁠ ⁠Use the Susi Air logo and brand reference from susiair.com / @susiairofficial (Instagram)
+
+•⁠ ⁠Submit (GitHub repo + live deployment URL) within 5 days to email it.admin@susiair.com
+
+
+
+Attachments:
+
+•⁠ ⁠Brief - Susi Air Full Stack Dev Candidate.pdf
+
+•⁠ ⁠mock-flight-hours.json
+
+•⁠ ⁠mock-documents.json
+
+•⁠ ⁠mock-schedules.json
+
+
+
+Should you require any further information, please do not hesitate to contact us at +62 811-2129-909
+
+Regards,
+
+HR Recruitment
+
+PT ASI PUDJIASTUTI AVIATION
+
+Jl. Merdeka No. 312, Pangandaran 46396, Jawa Barat, Indonesia
+
+Mobile Phone    :  +62 81120059364
+
+E-mail          :  recruiting@susiair.com
+
+Website         :  www.susiair.com
+
