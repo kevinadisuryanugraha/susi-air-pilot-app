@@ -11,6 +11,7 @@ dist/
 # NestJS build output
 nest/dist/
 nest/node_modules/
+*.tsbuildinfo
 
 # Nuxt build output
 nuxt/.nuxt/
