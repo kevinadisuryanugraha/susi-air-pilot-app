@@ -9,6 +9,8 @@ import { SchedulesModule } from './schedules/schedules.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 
+import { AppController } from './app.controller.js';
+
 @Module({
   imports: [
     DataStoreModule,
@@ -18,6 +20,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
     DocumentsModule,
     SchedulesModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,

@@ -1,0 +1,13 @@
+{
+  "name": "susi-air-pilot-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Susi Air Pilot Operations App Monorepo",
+  "scripts": {
+    "build": "cd nest && npm install && npm run build",
+    "start": "cd nest && npm run start:prod"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
