@@ -5,7 +5,8 @@
   "description": "Susi Air Pilot Operations App Monorepo",
   "scripts": {
     "build": "cd nest && npm install && npm run build",
-    "start": "cd nest && npm run start:prod"
+    "start": "cd nest && npm run start:prod",
+    "start:prod": "cd nest && npm run start:prod"
   },
   "engines": {
     "node": ">=22.12.0"
