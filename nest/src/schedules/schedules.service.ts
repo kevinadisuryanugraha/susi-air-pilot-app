@@ -61,4 +61,8 @@ export class SchedulesService {
       legend,
     };
   }
+
+  getWeather(airport: string) {
+    return this.dataStoreService.getAirportWeather(airport);
+  }
 }

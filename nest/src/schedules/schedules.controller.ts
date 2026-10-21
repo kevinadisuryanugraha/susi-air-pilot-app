@@ -6,6 +6,11 @@ import { GetSchedulesDto } from './dto/get-schedules.dto.js';
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
+  @Get('weather')
+  getWeather(@Query('airport') airport: string) {
+    return this.schedulesService.getWeather(airport || 'CJN');
+  }
+
   @Get()
   getSchedules(@Query() query: GetSchedulesDto) {
     return this.schedulesService.getSchedules(query.year, query.month);

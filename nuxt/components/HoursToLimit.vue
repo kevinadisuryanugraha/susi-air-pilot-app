@@ -1,61 +1,86 @@
 <template>
   <section class="hours-to-limit">
-    <div class="section-header">
+    <!-- Section Header -->
+    <div class="section-header anim-fade-up delay-2">
       <div>
         <h2 class="section-title">Hours to Limit</h2>
-        <p class="section-subtitle">Current flight hours vs. regulatory limits</p>
+        <p class="section-subtitle">CASR / DGCA rolling duty windows</p>
       </div>
-      <span class="ref-date-badge tabular">Ref: {{ store.summary?.today || '2026-05-15' }}</span>
     </div>
 
-    <!-- 4 Clean Limit Summary Cards -->
+    <!-- 4 Limit Summary Cards -->
     <div class="cards-grid">
-      <div
-        v-for="card in store.summary?.cards || []"
-        :key="card.type"
-        class="summary-card"
-        :class="{ 'card-exceeded': card.isExceeded }"
-      >
-        <div class="card-head">
-          <span class="card-name">{{ card.label.replace(' Limit', '') }}</span>
-          <span class="window-desc">{{ card.windowDescription }}</span>
+      <template v-if="store.isLoading && !store.summary">
+        <div v-for="i in 4" :key="i" class="summary-card skeleton-card anim-fade-up" :style="{ animationDelay: `${i * 0.06 + 0.1}s` }">
+          <div class="skeleton" style="height: 12px; width: 55%; border-radius: 6px; margin-bottom: 10px;"></div>
+          <div class="skeleton" style="height: 22px; width: 70%; border-radius: 6px; margin-bottom: 10px;"></div>
+          <div class="skeleton" style="height: 5px; border-radius: 999px;"></div>
         </div>
+      </template>
 
-        <div class="card-metric">
-          <span class="hours-current tabular font-bold">{{ card.currentHours }}</span>
-          <span class="hours-sep">/</span>
-          <span class="hours-limit tabular">{{ card.limit }}<span class="unit">h</span></span>
-        </div>
+      <template v-else>
+        <div
+          v-for="(card, idx) in store.summary?.cards || []"
+          :key="card.type"
+          class="summary-card anim-fade-up"
+          :class="[`card-${card.status}`, { 'card-exceeded': card.isExceeded }]"
+          :style="{ animationDelay: `${idx * 0.07 + 0.1}s` }"
+        >
+          <!-- Status indicator stripe on top -->
+          <div class="card-status-top" :style="{ background: getStatusColor(card) }"></div>
 
-        <!-- Clean Solid Progress Bar -->
-        <div class="progress-track">
-          <div
-            class="progress-bar"
-            :style="{
-              width: `${Math.min(100, card.percentage)}%`,
-              backgroundColor: card.isExceeded ? '#E63757' : (card.percentage >= 80 ? '#F59E0B' : '#1FBF8F')
-            }"
-          ></div>
-        </div>
+          <!-- Card head -->
+          <div class="card-head">
+            <div class="card-type-icon" :style="{ background: `${getStatusColor(card)}14`, color: getStatusColor(card) }">
+              <component :is="getCardIcon(card.type)" :size="14" />
+            </div>
+            <span class="card-name">{{ card.label.replace(' Limit', '') }}</span>
+          </div>
 
-        <div class="card-foot">
-          <span class="rem-text" :class="{ 'text-danger': card.isExceeded }">
-            {{ card.isExceeded ? `Over limit by ${(card.currentHours - card.limit).toFixed(1)}h` : `${card.remainingHours}h remaining` }}
-          </span>
-          <span class="pct-text tabular font-semibold">{{ card.percentage }}%</span>
+          <!-- Metric -->
+          <div class="card-metric">
+            <span class="hours-current tabular font-bold">{{ card.currentHours }}</span>
+            <span class="hours-sep">/</span>
+            <span class="hours-limit tabular">{{ card.limit }}<span class="unit">h</span></span>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-track">
+            <div
+              class="progress-bar"
+              :style="{
+                width: `${Math.min(100, card.percentage)}%`,
+                background: getProgressGradient(card),
+              }"
+            ></div>
+          </div>
+
+          <!-- Footer -->
+          <div class="card-foot">
+            <span class="window-desc">{{ card.windowDescription }}</span>
+            <span class="pct-text tabular font-bold" :style="{ color: getStatusColor(card) }">
+              {{ card.percentage }}%
+            </span>
+          </div>
+
+          <!-- Exceeded warning -->
+          <div v-if="card.isExceeded" class="exceeded-banner">
+            <AlertTriangle :size="10" />
+            <span>Over by {{ (card.currentHours - card.limit).toFixed(1) }}h</span>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <!-- Flight Hours Trend Chart Card -->
-    <div class="chart-card">
+    <div class="chart-card anim-fade-up delay-3">
       <div class="chart-header">
         <div>
           <h3 class="chart-title">Hours Trend</h3>
-          <p class="chart-sub">15-day window with today centered</p>
+          <p class="chart-sub">15-day window · Today centered</p>
         </div>
 
-        <!-- Clean iOS-style Segmented Control -->
+        <!-- Range Toggle -->
         <div class="segmented-control">
           <button
             v-for="r in rangeOptions"
@@ -63,20 +88,18 @@
             class="segment-btn"
             :class="{ active: store.selectedRange === r }"
             @click="handleRangeChange(r)"
-          >
-            {{ r }}
-          </button>
+          >{{ r }}</button>
         </div>
       </div>
 
-      <!-- Chart Legend Info -->
+      <!-- Legend -->
       <div class="chart-legend-row">
         <div class="legend-item">
-          <span class="legend-indicator cyan"></span>
+          <span class="legend-line cyan"></span>
           <span>Rolling Sum ({{ store.summary?.chart?.windowDays }}d)</span>
         </div>
         <div class="legend-item">
-          <span class="legend-indicator red"></span>
+          <span class="legend-line red dashed"></span>
           <span>Limit: <strong class="tabular">{{ store.summary?.chart?.limitLine }}h</strong></span>
         </div>
       </div>
@@ -85,7 +108,7 @@
       <div class="chart-canvas-wrapper">
         <div v-if="store.isLoading" class="chart-loading">
           <div class="spinner"></div>
-          <span>Loading chart...</span>
+          <span>Calculating rolling sums…</span>
         </div>
 
         <svg
@@ -97,8 +120,12 @@
         >
           <defs>
             <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#22C5E8" stop-opacity="0.3" />
+              <stop offset="0%" stop-color="#22C5E8" stop-opacity="0.25" />
               <stop offset="100%" stop-color="#22C5E8" stop-opacity="0.0" />
+            </linearGradient>
+            <linearGradient id="area-gradient-exceeded" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#E63757" stop-opacity="0.15" />
+              <stop offset="100%" stop-color="#E63757" stop-opacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -113,44 +140,36 @@
             class="grid-line"
           />
 
-          <!-- Y-axis numeric labels -->
+          <!-- Y-axis labels -->
           <text
             v-for="tick in yTicks"
             :key="`ylabel-${tick.val}`"
             :x="padding.left - 6"
             :y="tick.y + 3.5"
             class="y-axis-label tabular"
-          >
-            {{ tick.val }}
-          </text>
+          >{{ tick.val }}</text>
 
-          <!-- TODAY Column Indicator -->
+          <!-- TODAY column indicator -->
           <g v-if="todayPoint">
             <line
               :x1="todayPoint.x"
-              :y1="padding.top - 8"
+              :y1="padding.top - 10"
               :x2="todayPoint.x"
               :y2="svgHeight - padding.bottom"
               class="today-line"
             />
             <rect
-              :x="todayPoint.x - 17"
-              :y="padding.top - 20"
-              width="34"
+              :x="todayPoint.x - 18"
+              :y="padding.top - 22"
+              width="36"
               height="15"
-              rx="4"
+              rx="5"
               class="today-badge-rect"
             />
-            <text
-              :x="todayPoint.x"
-              :y="padding.top - 9"
-              class="today-badge-text"
-            >
-              Today
-            </text>
+            <text :x="todayPoint.x" :y="padding.top - 11" class="today-badge-text">Today</text>
           </g>
 
-          <!-- Red Limit Line (Horizontal) -->
+          <!-- Red Limit Line -->
           <line
             :x1="padding.left"
             :y1="limitY"
@@ -160,81 +179,72 @@
           />
           <text
             :x="svgWidth - padding.right"
-            :y="limitY - 4"
+            :y="limitY - 5"
             class="limit-label-red tabular"
-          >
-            Limit {{ store.summary?.chart?.limitLine }}h
-          </text>
+          >{{ store.summary?.chart?.limitLine }}h</text>
 
-          <!-- Area fill under line -->
+          <!-- Area Fill -->
           <path :d="areaPath" fill="url(#area-gradient)" />
 
-          <!-- Main trend curve -->
+          <!-- Main Trend Curve -->
           <path :d="linePath" class="trend-line" />
 
           <!-- Data Points -->
           <g
-            v-for="(pt, idx) in chartPoints"
+            v-for="pt in chartPoints"
             :key="`pt-${pt.date}`"
             class="point-group"
             @mouseenter="activePoint = pt"
             @click="activePoint = pt"
           >
-            <!-- Large transparent target for easy tapping -->
-            <circle :cx="pt.x" :cy="pt.y" r="12" fill="transparent" class="point-target" />
-
-            <!-- Circle Dot -->
+            <circle :cx="pt.x" :cy="pt.y" r="14" fill="transparent" class="point-target" />
             <circle
               :cx="pt.x"
               :cy="pt.y"
-              :r="pt.isToday ? 4.5 : (activePoint?.date === pt.date ? 4.5 : 3.5)"
+              :r="pt.isToday ? 5 : (activePoint?.date === pt.date ? 4.5 : 3.5)"
               :class="[
                 'point-dot',
                 pt.isExceeded ? 'dot-exceeded' : (pt.isToday ? 'dot-today' : 'dot-normal')
               ]"
             />
-
-            <!-- X-axis date labels -->
-            <text
-              :x="pt.x"
-              :y="svgHeight - padding.bottom + 16"
-              class="x-axis-label tabular"
-              :class="{ 'label-today': pt.isToday }"
-            >
-              {{ pt.dayNumber }}
-            </text>
           </g>
 
-          <!-- Tooltip Box on Hover/Tap -->
+          <!-- X-axis date labels -->
+          <text
+            v-for="pt in chartPoints"
+            :key="`xlabel-${pt.date}`"
+            :x="pt.x"
+            :y="svgHeight - padding.bottom + 16"
+            class="x-axis-label tabular"
+            :class="{ 'label-today': pt.isToday }"
+          >{{ pt.dayNumber }}</text>
+
+          <!-- Tooltip -->
           <g v-if="activePoint" class="tooltip-group">
-            <rect
-              :x="tooltipX"
-              :y="tooltipY"
-              width="106"
-              height="36"
-              rx="6"
-              class="tooltip-bg"
-            />
-            <text :x="tooltipX + 53" :y="tooltipY + 14" class="tooltip-text-title">
-              {{ activePoint.date }} {{ activePoint.isToday ? '(Today)' : '' }}
+            <rect :x="tooltipX" :y="tooltipY" width="112" height="38" rx="8" class="tooltip-bg" />
+            <text :x="tooltipX + 56" :y="tooltipY + 14" class="tooltip-text-title">
+              {{ activePoint.formattedDate }}{{ activePoint.isToday ? ' · Today' : '' }}
             </text>
-            <text :x="tooltipX + 53" :y="tooltipY + 28" class="tooltip-text-val tabular">
-              {{ activePoint.rollingSum }}h (Day: {{ activePoint.dailyHours }}h)
+            <text :x="tooltipX + 56" :y="tooltipY + 29" class="tooltip-text-val tabular">
+              {{ activePoint.rollingSum }}h  ·  Day: {{ activePoint.dailyHours }}h
             </text>
           </g>
         </svg>
+      </div>
 
-        <!-- Inspected Point Detail -->
-        <div v-if="activePoint" class="point-readout">
+      <!-- Point Readout -->
+      <div v-if="activePoint" class="point-readout anim-fade-in">
+        <div class="readout-left">
           <span class="readout-date font-semibold">{{ activePoint.formattedDate }}</span>
           <span class="readout-sum">
-            Rolling Sum: <strong class="tabular" :class="{ 'text-danger': activePoint.isExceeded }">{{ activePoint.rollingSum }}h</strong>
+            Rolling: <strong class="tabular" :class="{ 'text-danger': activePoint.isExceeded }">{{ activePoint.rollingSum }}h</strong>
           </span>
-          <span class="readout-daily">
-            Daily: <strong class="tabular">{{ activePoint.dailyHours }}h</strong>
-          </span>
+        </div>
+        <div class="readout-right">
+          <span class="readout-daily">Daily: <strong class="tabular">{{ activePoint.dailyHours }}h</strong></span>
           <span v-if="activePoint.isExceeded" class="tag-exceeded">
-            Limit Exceeded
+            <AlertTriangle :size="9" />
+            Exceeded
           </span>
         </div>
       </div>
@@ -243,23 +253,22 @@
 </template>
 
 <script setup lang="ts">
-import { useFlightHoursStore, type ChartSeriesPoint } from '~/stores/flightHours';
+import { useFlightHoursStore, type ChartSeriesPoint, type LimitCard } from '~/stores/flightHours';
+import { Clock, CalendarDays, CalendarClock, TrendingUp, AlertTriangle } from 'lucide-vue-next';
 
 const store = useFlightHoursStore();
 const rangeOptions = ['1w', '1m', '3m', '6m', '1y'] as const;
 const activePoint = ref<any | null>(null);
 
-const svgWidth = 380;
+const svgWidth  = 380;
 const svgHeight = 210;
-const padding = { top: 32, right: 24, bottom: 34, left: 34 };
+const padding   = { top: 32, right: 28, bottom: 34, left: 34 };
 
-const plotWidth = svgWidth - padding.left - padding.right;
-const plotHeight = svgHeight - padding.top - padding.bottom;
+const plotWidth  = svgWidth  - padding.left - padding.right;
+const plotHeight = svgHeight - padding.top  - padding.bottom;
 
 onMounted(() => {
-  if (!store.summary) {
-    store.fetchSummary('1w');
-  }
+  if (!store.summary) store.fetchSummary('1w');
 });
 
 function handleRangeChange(r: '1w' | '1m' | '3m' | '6m' | '1y') {
@@ -267,55 +276,57 @@ function handleRangeChange(r: '1w' | '1m' | '3m' | '6m' | '1y') {
   store.fetchSummary(r);
 }
 
-const yMax = computed(() => store.summary?.chart?.yAxisMax || 45);
+function getStatusColor(card: LimitCard): string {
+  if (card.isExceeded || card.status === 'danger') return '#E63757';
+  if (card.status === 'warning') return '#F59E0B';
+  return '#1FBF8F';
+}
+
+function getProgressGradient(card: LimitCard): string {
+  if (card.isExceeded || card.status === 'danger') return 'linear-gradient(90deg, #E63757, #FF6B85)';
+  if (card.status === 'warning') return 'linear-gradient(90deg, #F59E0B, #FBBF24)';
+  return 'linear-gradient(90deg, #1FBF8F, #34D399)';
+}
+
+function getCardIcon(type: LimitCard['type']) {
+  const icons = { daily: Clock, weekly: CalendarDays, monthly: CalendarClock, annual: TrendingUp };
+  return icons[type] || Clock;
+}
+
+// ---- SVG computed ----
+const yMax     = computed(() => store.summary?.chart?.yAxisMax || 45);
 const limitLine = computed(() => store.summary?.chart?.limitLine || 40);
 
-const limitY = computed(() => {
-  return padding.top + (1 - limitLine.value / yMax.value) * plotHeight;
-});
+const limitY = computed(() =>
+  padding.top + (1 - limitLine.value / yMax.value) * plotHeight
+);
 
 const yTicks = computed(() => {
-  const max = yMax.value;
   const steps = 4;
-  const stepVal = Math.round(max / steps);
-  const ticks = [];
-  for (let i = 0; i <= steps; i++) {
+  const stepVal = Math.round(yMax.value / steps);
+  return Array.from({ length: steps + 1 }, (_, i) => {
     const val = i * stepVal;
-    if (val <= max) {
-      const y = padding.top + (1 - val / max) * plotHeight;
-      ticks.push({ val, y });
-    }
-  }
-  return ticks;
+    if (val > yMax.value) return null;
+    return { val, y: padding.top + (1 - val / yMax.value) * plotHeight };
+  }).filter(Boolean) as { val: number; y: number }[];
 });
 
 const chartPoints = computed(() => {
   const series = store.summary?.chart?.series || [];
-  if (series.length === 0) return [];
-
+  if (!series.length) return [];
   const count = series.length;
   const stepX = count > 1 ? plotWidth / (count - 1) : 0;
-
-  return series.map((pt: ChartSeriesPoint, idx: number) => {
-    const x = padding.left + idx * stepX;
-    const ratio = Math.max(0, pt.rollingSum / yMax.value);
-    const y = padding.top + (1 - ratio) * plotHeight;
-    const dayNumber = pt.date.slice(8); // 'DD'
-
-    return {
-      ...pt,
-      x: Number(x.toFixed(2)),
-      y: Number(y.toFixed(2)),
-      dayNumber,
-    };
-  });
+  return series.map((pt: ChartSeriesPoint, idx: number) => ({
+    ...pt,
+    x: Number((padding.left + idx * stepX).toFixed(2)),
+    y: Number((padding.top + (1 - Math.max(0, pt.rollingSum) / yMax.value) * plotHeight).toFixed(2)),
+    dayNumber: pt.date.slice(8),
+  }));
 });
 
-const todayPoint = computed(() => {
-  return chartPoints.value.find((p) => p.isToday);
-});
+const todayPoint = computed(() => chartPoints.value.find(p => p.isToday));
 
-// Smooth Catmull-Rom to Cubic Bezier Curve
+// Catmull-Rom smooth curve
 const linePath = computed(() => {
   const pts = chartPoints.value;
   if (pts.length < 2) return '';
@@ -325,12 +336,10 @@ const linePath = computed(() => {
     const p1 = pts[i];
     const p2 = pts[i + 1];
     const p3 = pts[Math.min(pts.length - 1, i + 2)];
-
     const cp1x = p1.x + (p2.x - p0.x) / 6;
     const cp1y = p1.y + (p2.y - p0.y) / 6;
     const cp2x = p2.x - (p3.x - p1.x) / 6;
     const cp2y = p2.y - (p3.y - p1.y) / 6;
-
     d += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
   }
   return d;
@@ -338,98 +347,130 @@ const linePath = computed(() => {
 
 const areaPath = computed(() => {
   const pts = chartPoints.value;
-  if (pts.length === 0) return '';
-  const first = pts[0];
-  const last = pts[pts.length - 1];
+  if (!pts.length) return '';
   const baseline = svgHeight - padding.bottom;
-  return `${linePath.value} L ${last.x},${baseline} L ${first.x},${baseline} Z`;
+  return `${linePath.value} L ${pts[pts.length-1].x},${baseline} L ${pts[0].x},${baseline} Z`;
 });
 
 const tooltipX = computed(() => {
   if (!activePoint.value) return 0;
-  const x = activePoint.value.x - 53;
-  return Math.max(10, Math.min(svgWidth - 116, x));
+  return Math.max(10, Math.min(svgWidth - 122, activePoint.value.x - 56));
 });
-
 const tooltipY = computed(() => {
   if (!activePoint.value) return 0;
-  const y = activePoint.value.y - 42;
-  return Math.max(8, y);
+  return Math.max(8, activePoint.value.y - 46);
 });
 </script>
 
 <style scoped lang="scss">
 .hours-to-limit {
-  padding: 16px 20px 20px;
+  padding: 20px 16px 4px;
+
+  @media (max-width: 375px) {
+    padding: 16px 12px 4px;
+  }
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 
   .section-title {
     font-size: 17px;
     font-weight: 800;
-    color: $color-primary-navy;
-    letter-spacing: -0.3px;
+    color: $color-text-primary;
+    letter-spacing: -0.4px;
   }
 
   .section-subtitle {
-    font-size: 11px;
-    color: $color-text-secondary;
-    margin-top: 1px;
-  }
-
-  .ref-date-badge {
-    font-size: 10px;
-    font-weight: 600;
-    color: #475569;
-    background-color: #E2E8F0;
-    padding: 3px 8px;
-    border-radius: $radius-pill;
+    font-size: 11.5px;
+    color: $color-text-muted;
+    margin-top: 2px;
+    font-weight: 500;
   }
 }
 
-// 4 Cards Grid
+// ---- 4 Cards Grid ----
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+
+  @media (max-width: 360px) {
+    gap: 8px;
+  }
 }
 
 .summary-card {
-  background-color: $color-card-surface;
+  background: $color-card-surface;
   border-radius: $radius-card;
-  padding: 12px 14px;
+  padding: 13px 13px 11px;
   border: 1px solid $color-border;
   box-shadow: $shadow-card;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: $transition-smooth;
+  min-width: 0; /* prevent grid blowout */
+
+  &:hover {
+    box-shadow: $shadow-card-hover;
+    transform: translateY(-2px);
+  }
 
   &.card-exceeded {
-    border-color: rgba(230, 55, 87, 0.4);
-    background-color: #FFF9FA;
+    border-color: rgba(230, 55, 87, 0.3);
+    background: #FFFBFB;
   }
+
+  @media (max-width: 360px) {
+    padding: 10px 10px 9px;
+  }
+}
+
+.skeleton-card {
+  background: $color-card-surface;
+  border-radius: $radius-card;
+  padding: 16px;
+  border: 1px solid $color-border;
+}
+
+.card-status-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  opacity: 0.8;
 }
 
 .card-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 7px;
+  margin-bottom: 8px;
+  margin-top: 6px;
 
-  .card-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: $color-primary-navy;
+  .card-type-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
-  .window-desc {
-    font-size: 10px;
-    color: $color-text-secondary;
+  .card-name {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: $color-text-primary;
+    letter-spacing: -0.2px;
   }
 }
 
@@ -440,15 +481,15 @@ const tooltipY = computed(() => {
   margin-bottom: 8px;
 
   .hours-current {
-    font-size: 19px;
-    color: $color-primary-navy;
+    font-size: 20px;
+    font-weight: 800;
+    color: $color-text-primary;
+    letter-spacing: -0.5px;
   }
-
   .hours-sep {
     font-size: 13px;
     color: $color-text-muted;
   }
-
   .hours-limit {
     font-size: 13px;
     font-weight: 600;
@@ -461,18 +502,17 @@ const tooltipY = computed(() => {
   }
 }
 
-// Solid Smooth Progress Track
 .progress-track {
-  height: 6px;
-  background-color: #F1F5F9;
+  height: 5px;
+  background: $color-bg;
   border-radius: $radius-pill;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
 
   .progress-bar {
     height: 100%;
     border-radius: $radius-pill;
-    transition: width 0.3s ease;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
@@ -480,94 +520,124 @@ const tooltipY = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10.5px;
-  color: $color-text-secondary;
 
-  .rem-text {
+  .window-desc {
+    font-size: 10px;
+    color: $color-text-muted;
     font-weight: 500;
-
-    &.text-danger {
-      color: $color-brand-red;
-      font-weight: 700;
-    }
   }
 
   .pct-text {
-    color: $color-primary-navy;
+    font-size: 11px;
   }
 }
 
-// Chart Card
+.exceeded-banner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  background: rgba(230, 55, 87, 0.1);
+  border-radius: $radius-xs;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: $color-brand-red;
+}
+
+// ---- Chart Card ----
 .chart-card {
-  background-color: $color-card-surface;
+  background: $color-card-surface;
   border-radius: $radius-card;
   padding: 16px 14px 14px;
   border: 1px solid $color-border;
   box-shadow: $shadow-card;
+  margin-bottom: 8px;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 
   .chart-title {
     font-size: 14px;
-    font-weight: 700;
-    color: $color-primary-navy;
+    font-weight: 800;
+    color: $color-text-primary;
+    letter-spacing: -0.3px;
   }
 
   .chart-sub {
     font-size: 10px;
-    color: $color-text-secondary;
+    color: $color-text-muted;
+    margin-top: 1px;
+    font-weight: 500;
   }
 }
 
-// iOS Segmented Control
+// Segmented control (iOS-style)
 .segmented-control {
   display: flex;
-  background-color: #F1F5F9;
-  border-radius: 8px;
+  background: $color-bg;
+  border-radius: 10px;
   padding: 2px;
   gap: 2px;
+  border: 1px solid $color-border;
 
   .segment-btn {
-    padding: 3px 8px;
-    font-size: 11px;
+    padding: 4px 8px;
+    font-size: 10.5px;
     font-weight: 600;
-    color: $color-text-secondary;
-    border-radius: 6px;
-    background: transparent;
+    color: $color-text-muted;
+    border-radius: 8px;
+    transition: $transition-smooth;
 
     &.active {
-      background-color: $color-primary-navy;
+      background: $color-primary-navy;
       color: white;
+      box-shadow: $shadow-xs;
+    }
+
+    &:hover:not(.active) {
+      color: $color-text-primary;
     }
   }
 }
 
 .chart-legend-row {
   display: flex;
-  justify-content: flex-end;
-  gap: 14px;
-  font-size: 10px;
-  color: $color-text-secondary;
-  margin-bottom: 8px;
+  gap: 16px;
+  font-size: 10.5px;
+  color: $color-text-muted;
+  font-weight: 500;
+  margin-bottom: 10px;
 
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
 
-    .legend-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+    strong { color: $color-text-primary; }
+  }
+}
 
-      &.cyan { background-color: $color-chart-accent; }
-      &.red { background-color: $color-brand-red; }
-    }
+.legend-line {
+  display: inline-block;
+  width: 16px;
+  height: 2.5px;
+  border-radius: $radius-pill;
+
+  &.cyan { background-color: $color-chart-accent; }
+  &.red  { background-color: $color-brand-red; }
+  &.dashed {
+    background: repeating-linear-gradient(
+      90deg,
+      $color-brand-red 0px,
+      $color-brand-red 4px,
+      transparent 4px,
+      transparent 7px
+    );
   }
 }
 
@@ -582,24 +652,13 @@ const tooltipY = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: $color-text-secondary;
+  gap: 10px;
+  color: $color-text-muted;
   font-size: 12px;
-
-  .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid #E2E8F0;
-    border-top-color: $color-primary-navy;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
+  font-weight: 500;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+// SVG styles
 .trend-svg {
   width: 100%;
   height: auto;
@@ -607,7 +666,7 @@ const tooltipY = computed(() => {
 }
 
 .grid-line {
-  stroke: #F1F5F9;
+  stroke: #EBF2F8;
   stroke-width: 1;
 }
 
@@ -615,11 +674,11 @@ const tooltipY = computed(() => {
   font-size: 9px;
   fill: #94A3B8;
   text-anchor: end;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .today-line {
-  stroke: rgba(14, 33, 56, 0.25);
+  stroke: rgba(14, 33, 56, 0.2);
   stroke-width: 1.5;
   stroke-dasharray: 3, 3;
 }
@@ -631,20 +690,20 @@ const tooltipY = computed(() => {
 .today-badge-text {
   fill: white;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 800;
   text-anchor: middle;
 }
 
 .limit-line-red {
   stroke: $color-brand-red;
   stroke-width: 1.5;
-  stroke-dasharray: 4, 3;
+  stroke-dasharray: 5, 3;
 }
 
 .limit-label-red {
   fill: $color-brand-red;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 800;
   text-anchor: end;
 }
 
@@ -656,23 +715,22 @@ const tooltipY = computed(() => {
   stroke-linejoin: round;
 }
 
-.point-target {
-  cursor: pointer;
-}
+.point-target { cursor: pointer; }
 
 .point-dot {
   cursor: pointer;
   stroke: white;
   stroke-width: 1.5;
+  transition: r 0.15s ease;
 
-  &.dot-normal { fill: $color-chart-accent; }
-  &.dot-today { fill: $color-primary-navy; stroke-width: 2; }
+  &.dot-normal   { fill: $color-chart-accent; }
+  &.dot-today    { fill: $color-primary-navy; stroke-width: 2; }
   &.dot-exceeded { fill: $color-brand-red; stroke-width: 2; }
 }
 
 .x-axis-label {
   font-size: 9px;
-  fill: #64748B;
+  fill: #94A3B8;
   text-anchor: middle;
   font-weight: 500;
 
@@ -682,15 +740,16 @@ const tooltipY = computed(() => {
   }
 }
 
-// Tooltip
 .tooltip-bg {
-  fill: rgba(14, 33, 56, 0.95);
+  fill: $color-primary-navy;
+  opacity: 0.93;
 }
 
 .tooltip-text-title {
-  fill: #CBD5E1;
+  fill: rgba(255,255,255,0.7);
   font-size: 8px;
   text-anchor: middle;
+  font-weight: 500;
 }
 
 .tooltip-text-val {
@@ -700,33 +759,46 @@ const tooltipY = computed(() => {
   text-anchor: middle;
 }
 
+// Point readout below chart
 .point-readout {
   margin-top: 10px;
-  padding: 8px 12px;
-  background-color: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  padding: 10px 13px;
+  background: $color-bg;
+  border: 1px solid $color-border;
   border-radius: $radius-sm;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
-  color: $color-text-primary;
 
-  .readout-date {
-    color: $color-primary-navy;
+  .readout-left, .readout-right {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
   }
 
-  .text-danger {
-    color: $color-brand-red;
+  .readout-date { color: $color-text-primary; font-size: 12px; }
+  .readout-sum, .readout-daily {
+    font-size: 11px;
+    color: $color-text-muted;
+    font-weight: 500;
+
+    strong { color: $color-text-primary; }
   }
+  .text-danger { color: $color-brand-red !important; }
+
+  .readout-right { align-items: flex-end; }
 
   .tag-exceeded {
-    font-size: 9px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 9.5px;
     font-weight: 700;
     color: $color-brand-red;
-    background-color: #FEE2E2;
-    padding: 2px 6px;
-    border-radius: 4px;
+    background: rgba(230, 55, 87, 0.1);
+    padding: 2px 7px;
+    border-radius: $radius-pill;
   }
 }
 </style>

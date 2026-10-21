@@ -250,6 +250,46 @@ async function runFullAudit() {
   const juneData = await juneRes.json();
   assert(suiteSched, 'June 2026 schedule navigation returns duties', juneRes.status === 200 && juneData.schedules.length > 0);
 
+  // Weather METAR test
+  const weatherRes = await fetch(`${API_BASE}/schedules/weather?airport=CJN`, { headers: authHeaders });
+  assert(suiteSched, 'GET /schedules/weather?airport=CJN returns METAR briefing', weatherRes.status === 200);
+  const weatherData = await weatherRes.json();
+  assert(suiteSched, 'Weather has ICAO, wind, visibility, QNH, and VFR condition', weatherData.icao === 'WI1A' && weatherData.condition === 'VFR');
+
+  // -------------------------------------------------------------------------
+  // SUITE 6: ELECTRONIC FLIGHT LOGBOOK (EFB)
+  // -------------------------------------------------------------------------
+  const suiteLogbook = { name: 'Suite 6: Electronic Flight Logbook (EFB)', tests: [] };
+  results.suites.push(suiteLogbook);
+  console.log(`\n📋 Running ${suiteLogbook.name}...`);
+
+  const logListRes = await fetch(`${API_BASE}/logbook`, { headers: authHeaders });
+  assert(suiteLogbook, 'GET /logbook returns 200 OK', logListRes.status === 200);
+  const logListData = await logListRes.json();
+  assert(suiteLogbook, 'Logbook contains entries and statistics', logListData.entries.length > 0 && logListData.stats.totalFlights > 0);
+
+  // Create flight leg test
+  const createLogRes = await fetch(`${API_BASE}/logbook`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date: '2026-05-15',
+      flightNumber: 'SI-888',
+      aircraft: 'PK-VVP (C208B)',
+      origin: 'CJN',
+      destination: 'HLP',
+      offBlock: '15:30',
+      onBlock: '16:45',
+      flightHours: 1.25,
+      landings: 1,
+      pilotRole: 'PIC',
+      remarks: 'Automated EFB Verification Flight',
+    }),
+  });
+  assert(suiteLogbook, 'POST /logbook records new flight leg (201 Created)', createLogRes.status === 201);
+  const createdLog = await createLogRes.json();
+  assert(suiteLogbook, 'Created flight leg has ID, flightNumber, and formatted hours', createdLog.id && createdLog.flightNumber === 'SI-888');
+
   // -------------------------------------------------------------------------
   // SUITE 6: DTO INPUT VALIDATION & BOUNDARY TESTING
   // -------------------------------------------------------------------------

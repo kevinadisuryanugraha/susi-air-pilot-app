@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Navy background -->
+  <rect width="512" height="512" rx="112" fill="#0E2138"/>
+  <!-- Sky gradient overlay -->
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22C5E8" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0E2138" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="planeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D0EDF9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#skyGrad)"/>
+  <!-- Grid lines subtle -->
+  <line x1="0" y1="170" x2="512" y2="170" stroke="white" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="0" y1="340" x2="512" y2="340" stroke="white" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="170" y1="0" x2="170" y2="512" stroke="white" stroke-opacity="0.05" stroke-width="1"/>
+  <line x1="340" y1="0" x2="340" y2="512" stroke="white" stroke-opacity="0.05" stroke-width="1"/>
+  <!-- Plane body -->
+  <path d="M256 160 C270 160 310 200 320 256 C330 310 310 360 256 380 C202 360 182 310 192 256 C202 200 242 160 256 160Z" fill="url(#planeGrad)" opacity="0.08"/>
+  <!-- Airplane icon centered -->
+  <g transform="translate(256,256) rotate(-30) translate(-88,-88)">
+    <!-- Fuselage -->
+    <rect x="74" y="48" width="28" height="90" rx="14" fill="white"/>
+    <!-- Wings -->
+    <path d="M88 100 L20 140 L20 152 L88 130 L156 152 L156 140 Z" fill="white"/>
+    <!-- Tail -->
+    <path d="M88 138 L60 168 L60 176 L88 162 L116 176 L116 168 Z" fill="white"/>
+    <!-- Nose -->
+    <ellipse cx="88" cy="48" rx="14" ry="8" fill="#22C5E8"/>
+  </g>
+  <!-- Cyan accent line bottom -->
+  <rect x="80" y="430" width="352" height="3" rx="2" fill="#22C5E8" opacity="0.6"/>
+</svg>

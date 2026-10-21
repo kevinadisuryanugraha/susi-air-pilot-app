@@ -1,30 +1,63 @@
-// Susi Air Official Palette (Strict Anti-Slop Specification)
+// ============================================================
+// Susi Air Official Palette — Premium Aviation Cockpit Edition
+// ============================================================
+
+// Primary Brand Colors
 $color-primary-navy: #0E2138;
+$color-navy-light: #1A3356;
+$color-navy-muted: #2E4A6B;
 $color-brand-red: #E63757;
-$color-bg: #F5F6F8;
+$color-brand-red-hover: #CC2F4A;
+
+// Sky Aviation Backgrounds
+$color-bg: #EDF5FB;
+$color-bg-alt: #F4F9FD;
+$color-sky-start: #D6ECFA;
+$color-sky-end: #EDF5FB;
+
+// Surfaces
 $color-card-surface: #FFFFFF;
+$color-card-elevated: #FAFCFE;
+$color-overlay: rgba(14, 33, 56, 0.04);
+
+// Typography
 $color-text-primary: #0E2138;
-$color-text-secondary: #6B7280;
-$color-text-muted: #9CA3AF;
-$color-border: #E5E7EB;
+$color-text-secondary: #4A5568;
+$color-text-muted: #8896A7;
+
+// Borders
+$color-border: #DDE8F0;
+$color-border-strong: #C5D5E0;
 
 // State Colors per Brief
 $color-success: #1FBF8F;
+$color-success-bg: rgba(31, 191, 143, 0.1);
 $color-warning: #F59E0B;
+$color-warning-bg: rgba(245, 158, 11, 0.1);
 $color-danger: #E63757;
+$color-danger-bg: rgba(230, 55, 87, 0.08);
 $color-chart-accent: #22C5E8;
+$color-chart-accent-bg: rgba(34, 197, 232, 0.12);
 
 // Typography
 $font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-// Radii per Brief: 12-16px on cards, pill on buttons
-$radius-card: 14px;
-$radius-sm: 8px;
+// Radii
+$radius-card: 16px;
+$radius-card-lg: 20px;
+$radius-sm: 10px;
+$radius-xs: 6px;
 $radius-pill: 9999px;
 
-// Clean Subtle Shadows (no generic AI heavy glows)
-$shadow-sm: 0 1px 2px rgba(14, 33, 56, 0.04);
-$shadow-card: 0 2px 8px rgba(14, 33, 56, 0.04), 0 1px 2px rgba(14, 33, 56, 0.02);
-$shadow-floating: 0 8px 24px rgba(14, 33, 56, 0.08);
+// Shadows — aviation premium depth
+$shadow-xs: 0 1px 3px rgba(14, 33, 56, 0.06);
+$shadow-sm: 0 2px 6px rgba(14, 33, 56, 0.06), 0 1px 2px rgba(14, 33, 56, 0.04);
+$shadow-card: 0 4px 16px rgba(14, 33, 56, 0.07), 0 1px 4px rgba(14, 33, 56, 0.04);
+$shadow-card-hover: 0 8px 24px rgba(14, 33, 56, 0.12), 0 2px 6px rgba(14, 33, 56, 0.06);
+$shadow-floating: 0 12px 40px rgba(14, 33, 56, 0.14), 0 4px 12px rgba(14, 33, 56, 0.08);
+$shadow-nav: 0 -4px 20px rgba(14, 33, 56, 0.08);
 
-$transition-default: all 0.2s ease;
+// Transitions — spring-like premium motion
+$transition-default: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+$transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-fast: all 0.16s ease-out;

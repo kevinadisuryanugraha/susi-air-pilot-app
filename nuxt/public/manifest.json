@@ -1,0 +1,16 @@
+{
+  "name": "Susi Air · Pilot Operations",
+  "short_name": "SusiAir Pilot",
+  "description": "Mobile electronic flight bag and duty tracker for Susi Air flight crew",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E2138",
+  "theme_color": "#0E2138",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "240x60",
+      "type": "image/png"
+    }
+  ]
+}
