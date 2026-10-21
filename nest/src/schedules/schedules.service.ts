@@ -36,7 +36,7 @@ export class SchedulesService {
     const { schedules, legend } = this.dataStoreService.getSchedules(queryYear, queryMonth);
 
     const mapped = schedules.map((item) => {
-      const isCompleted = item.count_logbooks === item.count_schedules;
+      const isCompleted = item.count_logbooks >= item.count_schedules && item.count_schedules > 0;
       const remainingDuties = Math.max(0, item.count_schedules - item.count_logbooks);
 
       return {
