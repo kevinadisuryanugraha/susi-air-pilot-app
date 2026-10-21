@@ -13,6 +13,7 @@
 |---|---|
 | **Frontend (Nuxt 3 Mobile App)** | **[https://nuxt-flame.vercel.app](https://nuxt-flame.vercel.app)** |
 | **Backend (NestJS REST API)** | **[https://nest-ten-taupe.vercel.app](https://nest-ten-taupe.vercel.app)** |
+| **Interactive Swagger API Docs** | **[https://nest-ten-taupe.vercel.app/docs](https://nest-ten-taupe.vercel.app/docs)** |
 | **API Health Status** | **[https://nest-ten-taupe.vercel.app/health](https://nest-ten-taupe.vercel.app/health)** |
 | **GitHub Repository** | **[https://github.com/kevinadisuryanugraha/susi-air-pilot-app](https://github.com/kevinadisuryanugraha/susi-air-pilot-app)** |
 
@@ -60,13 +61,27 @@ SusiAir/
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
+### Option A: One-Command Run with Docker Compose (Recommended)
+You can boot both the NestJS API and Nuxt 3 Frontend in containerized isolation:
+
+```bash
+docker compose up --build
+```
+- Frontend will be available at **`http://localhost:3000`**
+- Backend API will be available at **`http://localhost:3001`**
+- Swagger UI will be available at **`http://localhost:3001/docs`**
+
+---
+
+### Option B: Local Node.js Setup
+
+#### Prerequisites
 - **Node.js**: `v20.x` or higher (tested on Node `v24.19.0`)
 - **npm**: `v10.x` or higher
 
 ---
 
-### 1. Backend Service (`/nest`)
+#### 1. Backend Service (`/nest`)
 
 ```bash
 cd nest

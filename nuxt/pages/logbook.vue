@@ -10,10 +10,16 @@
           <p class="page-subtitle">Pilot flight legs & block hours ledger</p>
         </div>
 
-        <button class="btn-new-log" @click="showModal = true">
-          <Plus :size="16" />
-          <span>Record Leg</span>
-        </button>
+        <div class="header-action-group">
+          <button class="btn-export-csv" title="Export Logbook CSV" @click="exportLogbookCsv">
+            <Download :size="14" />
+            <span>Export CSV</span>
+          </button>
+          <button class="btn-new-log" @click="showModal = true">
+            <Plus :size="14" />
+            <span>Record Leg</span>
+          </button>
+        </div>
       </div>
 
       <!-- Stats Summary Row -->
@@ -177,11 +183,63 @@
 
 <script setup lang="ts">
 import { useLogbookStore, type CreateLogbookPayload } from '~/stores/logbook';
-import { Plus, ArrowRight } from 'lucide-vue-next';
+import { Plus, ArrowRight, Download } from 'lucide-vue-next';
 
 const store = useLogbookStore();
 const showModal = ref(false);
 const isSubmitting = ref(false);
+
+function exportLogbookCsv() {
+  const entries = store.entries;
+  if (!entries || entries.length === 0) {
+    alert('No flight legs recorded to export.');
+    return;
+  }
+
+  const headers = [
+    'Flight Number',
+    'Date',
+    'Aircraft',
+    'Origin',
+    'Destination',
+    'Off Block',
+    'On Block',
+    'Flight Hours',
+    'Landings',
+    'Pilot Role',
+    'Remarks',
+    'Recorded At',
+  ];
+
+  const rows = entries.map((e) => [
+    `"${e.flightNumber}"`,
+    `"${e.date}"`,
+    `"${e.aircraft}"`,
+    `"${e.origin}"`,
+    `"${e.destination}"`,
+    `"${e.offBlock}"`,
+    `"${e.onBlock}"`,
+    e.flightHours,
+    e.landings,
+    `"${e.pilotRole}"`,
+    `"${(e.remarks || '').replace(/"/g, '""')}"`,
+    `"${e.createdAt}"`,
+  ]);
+
+  const csvContent =
+    'data:text/csv;charset=utf-8,' +
+    [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute(
+    'download',
+    `Susi_Air_Pilot_Logbook_${new Date().toISOString().slice(0, 10)}.csv`,
+  );
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 const form = ref<CreateLogbookPayload>({
   date: '2026-05-15',
@@ -251,6 +309,31 @@ async function handleCreateLog() {
     font-size: 11px;
     color: $color-text-secondary;
     margin-top: 1px;
+  }
+}
+
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: white;
+  border: 1px solid $color-border;
+  color: $color-primary-navy;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: $radius-pill;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    background-color: #F1F5F9;
+    border-color: #CBD5E1;
   }
 }
 

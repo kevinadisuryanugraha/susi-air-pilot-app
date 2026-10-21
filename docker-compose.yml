@@ -1,0 +1,32 @@
+services:
+  nest-backend:
+    build:
+      context: ./nest
+      dockerfile: Dockerfile
+    container_name: susiair-nest-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=susiair-pilot-ops-secret-key-2026
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nuxt-frontend:
+    build:
+      context: ./nuxt
+      dockerfile: Dockerfile
+    container_name: susiair-nuxt-app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NUXT_PUBLIC_API_BASE=http://nest-backend:3001
+    depends_on:
+      nest-backend:
+        condition: service_healthy
+    restart: unless-stopped

@@ -336,6 +336,15 @@ async function runFullAudit() {
   });
   assert(suiteSecurity, 'Strict parameter injection rejected with 400 Bad Request', injectionRes.status === 400);
 
+  // Swagger / OpenAPI Docs verification
+  const swaggerHtmlRes = await fetch(`${API_BASE}/docs`);
+  assert(suiteSecurity, 'GET /docs returns 200 OK (Swagger UI active)', swaggerHtmlRes.status === 200);
+
+  const swaggerJsonRes = await fetch(`${API_BASE}/docs-json`);
+  assert(suiteSecurity, 'GET /docs-json returns 200 OK (Valid OpenAPI 3.0 schema)', swaggerJsonRes.status === 200);
+  const swaggerSpec = await swaggerJsonRes.json();
+  assert(suiteSecurity, 'OpenAPI schema registers all 10 endpoints', Object.keys(swaggerSpec.paths).length >= 10);
+
   // -------------------------------------------------------------------------
   // SUITE 8: FRONTEND LIVE INTEGRITY & SSR CHECKS
   // -------------------------------------------------------------------------
