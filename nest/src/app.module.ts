@@ -7,9 +7,9 @@ import { FlightHoursModule } from './flight-hours/flight-hours.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
 import { SchedulesModule } from './schedules/schedules.module.js';
 import { LogbookModule } from './logbook/logbook.module.js';
+import { RateLimiterGuard } from './common/guards/rate-limiter.guard.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
-
 import { AppController } from './app.controller.js';
 
 @Module({
@@ -24,6 +24,10 @@ import { AppController } from './app.controller.js';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

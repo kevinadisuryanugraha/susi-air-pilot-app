@@ -307,9 +307,39 @@ async function runFullAudit() {
   assert(suiteValidation, 'Invalid year/month rejected with 400 Bad Request', badSchedRes.status === 400);
 
   // -------------------------------------------------------------------------
-  // SUITE 7: FRONTEND LIVE INTEGRITY & SSR CHECKS
+  // SUITE 7: ENTERPRISE SECURITY & CACHE HEADERS (HELMET + SWR)
   // -------------------------------------------------------------------------
-  const suiteFrontend = { name: 'Suite 7: Frontend Web App & SSR Integrity', tests: [] };
+  const suiteSecurity = { name: 'Suite 7: Enterprise Security & Edge Cache Headers', tests: [] };
+  results.suites.push(suiteSecurity);
+  console.log(`\n📋 Running ${suiteSecurity.name}...`);
+
+  // Helmet Headers
+  const secHeadRes = await fetch(`${API_BASE}/health`);
+  assert(suiteSecurity, 'X-Content-Type-Options: nosniff header present', secHeadRes.headers.get('x-content-type-options') === 'nosniff');
+  assert(suiteSecurity, 'X-Frame-Options: DENY (anti-clickjacking) header present', secHeadRes.headers.get('x-frame-options') === 'DENY');
+  assert(suiteSecurity, 'Strict-Transport-Security (HSTS) header present', !!secHeadRes.headers.get('strict-transport-security'));
+
+  // Edge Cache-Control Header
+  const cacheHeadRes = await fetch(`${API_BASE}/schedules?year=2026&month=05`, { headers: authHeaders });
+  assert(suiteSecurity, 'Schedules endpoint has SWR Cache-Control header', cacheHeadRes.headers.get('cache-control')?.includes('stale-while-revalidate'));
+
+  // Parameter Injection & Mass Assignment Prevention
+  const injectionRes = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'johndoe',
+      password: 'susiairtest',
+      injectedField: '<script>alert(1)</script>',
+      isAdmin: true,
+    }),
+  });
+  assert(suiteSecurity, 'Strict parameter injection rejected with 400 Bad Request', injectionRes.status === 400);
+
+  // -------------------------------------------------------------------------
+  // SUITE 8: FRONTEND LIVE INTEGRITY & SSR CHECKS
+  // -------------------------------------------------------------------------
+  const suiteFrontend = { name: 'Suite 8: Frontend Web App & SSR Integrity', tests: [] };
   results.suites.push(suiteFrontend);
   console.log(`\n📋 Running ${suiteFrontend.name}...`);
 
