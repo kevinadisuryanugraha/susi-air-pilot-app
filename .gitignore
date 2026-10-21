@@ -21,7 +21,7 @@ nuxt/node_modules/
 
 # Logs & Environment
 *.log
-image.png
+image*.png
 .env
 .env.*
 !.env.example
